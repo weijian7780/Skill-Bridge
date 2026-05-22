@@ -1,0 +1,142 @@
+import { useNavigate } from "react-router-dom";
+import { Icon } from "../components/Icon.jsx";
+import { PageShell } from "../components/PageShell.jsx";
+import { useAppState } from "../state/AppStateContext.jsx";
+import { useAuth } from "../state/AuthContext.jsx";
+
+export function ProfilePage() {
+  const navigate = useNavigate();
+  const { analysis, careerTarget, cvDocument, skillProfile, missingSkills, syncStatus } = useAppState();
+  const { config, logout, session } = useAuth();
+  const displayName = session?.user?.email?.split("@")[0] ?? "Alex Mercer";
+  const gaps = missingSkills;
+
+  async function handleSignOut() {
+    await logout();
+    navigate("/");
+  }
+
+  return (
+    <PageShell>
+      <main className="pt-24 px-margin-mobile max-w-2xl mx-auto space-y-md">
+        <section className="mb-lg">
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">{displayName}</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant">UMS Year 3 - Computer Science</p>
+        </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+          <article className="bg-surface-container p-md border border-outline-variant rounded-xl flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Readiness Snapshot</span>
+              <Icon name="trending_up" className="text-primary" />
+            </div>
+            <div>
+              <div className="flex items-end gap-xs">
+                <span className="font-headline-xl-mobile text-headline-xl-mobile text-primary">68%</span>
+                <span className="font-label-md text-label-md text-primary-container pb-1">On Track</span>
+              </div>
+              <div className="w-full bg-surface-variant h-1.5 rounded-full mt-sm overflow-hidden">
+                <div className="bg-primary h-full w-[68%]" />
+              </div>
+            </div>
+          </article>
+
+          <article className="bg-surface-container p-md border border-outline-variant rounded-xl flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Roadmap Status</span>
+              <Icon name="map" className="text-secondary" />
+            </div>
+            <div>
+              <div className="flex items-end gap-xs">
+                <span className="font-headline-xl-mobile text-headline-xl-mobile text-secondary">25%</span>
+                <span className="font-label-md text-label-md text-on-secondary-container pb-1">Completed</span>
+              </div>
+              <div className="w-full bg-surface-variant h-1.5 rounded-full mt-sm overflow-hidden">
+                <div className="bg-secondary h-full w-[25%]" />
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <article className="bg-surface-container p-md border border-outline-variant rounded-xl">
+          <div className="flex items-center gap-sm mb-md">
+            <Icon name="target" className="text-primary" />
+            <h3 className="font-headline-md text-headline-md text-on-surface">Career Target</h3>
+          </div>
+          <div className="flex justify-between items-center bg-surface-container-low p-sm rounded-lg">
+            <div>
+              <p className="font-body-md text-body-md text-on-surface">{careerTarget.role}</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">{careerTarget.region}</p>
+            </div>
+            <a className="text-primary hover:underline font-label-md text-label-md" href="/target">Edit</a>
+          </div>
+        </article>
+
+        <article className="bg-surface-container p-md border border-outline-variant rounded-xl">
+          <div className="flex justify-between items-center mb-md">
+            <div className="flex items-center gap-sm">
+              <Icon name="warning" className="text-error" />
+              <h3 className="font-headline-md text-headline-md text-on-surface">Skill Gap Summary</h3>
+            </div>
+            <span className="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-0.5 rounded">{gaps.length} Missing</span>
+          </div>
+          <div className="flex flex-wrap gap-xs">
+            {gaps.slice(0, 3).map((skill) => (
+              <span key={skill} className="bg-surface-variant text-on-surface-variant px-sm py-xs rounded-full font-label-sm text-label-sm">{skill}</span>
+            ))}
+            {gaps.length > 3 && <span className="bg-surface-variant text-on-surface-variant px-sm py-xs rounded-full font-label-sm text-label-sm">+{gaps.length - 3} more</span>}
+            {gaps.length === 0 && (
+              <span className="bg-surface-variant text-on-surface-variant px-sm py-xs rounded-full font-label-sm text-label-sm">
+                {analysis.status === "needs_market" ? "Job market pending" : "No gaps detected"}
+              </span>
+            )}
+          </div>
+        </article>
+
+        <article className="bg-surface-container p-md border border-outline-variant rounded-xl">
+          <h3 className="font-headline-md text-headline-md text-on-surface mb-md">Saved Documents</h3>
+          <div className="flex items-center justify-between p-sm border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer group">
+            <div className="flex items-center gap-sm">
+              <Icon name="description" className="text-on-surface-variant group-hover:text-primary transition-colors" />
+              <span className="font-body-md text-body-md text-on-surface">
+                {cvDocument?.fileName || (skillProfile.provider === "Not extracted yet" ? "No CV uploaded yet" : "Latest CV saved")}
+              </span>
+            </div>
+            <Icon name="download" className="text-on-surface-variant" />
+          </div>
+        </article>
+
+        <article className="bg-surface-container p-md border border-outline-variant rounded-xl">
+          <div className="flex items-center justify-between gap-sm">
+            <div className="flex items-center gap-sm">
+              <Icon
+                name={config.configured ? "cloud_done" : "cloud_off"}
+                className={config.configured ? "text-primary" : "text-on-surface-variant"}
+              />
+              <div>
+                <h3 className="font-headline-md text-headline-md text-on-surface">Data Sync</h3>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  {config.configured ? syncStatus : config.reason}
+                </p>
+              </div>
+            </div>
+            <span className={`font-label-sm text-label-sm px-2 py-0.5 rounded ${config.configured ? "bg-primary-container text-on-primary-container" : "bg-surface-variant text-on-surface-variant"}`}>
+              {config.configured ? "Live" : "Local"}
+            </span>
+          </div>
+        </article>
+
+        <section className="pt-lg space-y-sm">
+          <button className="w-full flex items-center gap-md p-md hover:bg-surface-container rounded-xl transition-colors text-on-surface border border-transparent hover:border-outline-variant">
+            <Icon name="settings" />
+            <span className="font-label-md text-label-md">Account Settings</span>
+          </button>
+          <button className="w-full flex items-center gap-md p-md hover:bg-error-container/20 rounded-xl transition-colors text-error border border-transparent hover:border-error/30" onClick={handleSignOut}>
+            <Icon name="logout" />
+            <span className="font-label-md text-label-md">Sign Out</span>
+          </button>
+        </section>
+      </main>
+    </PageShell>
+  );
+}
