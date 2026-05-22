@@ -13,11 +13,11 @@ export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, 
       missingSkills: [],
       prioritySkill: "",
       recommendation: "Upload and confirm your latest CV before running skill-gap analysis.",
-      marketEvidence: buildMarketEvidence(jobs),
+      marketEvidence: buildMarketEvidence(jobs, cvSkills),
     };
   }
 
-  const marketEvidence = buildMarketEvidence(jobs);
+  const marketEvidence = buildMarketEvidence(jobs, cvSkills);
   const requiredSkills = Object.keys(marketEvidence.skillDemand);
 
   if (requiredSkills.length === 0) {
@@ -53,19 +53,65 @@ export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, 
   };
 }
 
-function buildMarketEvidence(jobs = []) {
+function buildMarketEvidence(jobs = [], cvSkills = []) {
   const skillDemand = {};
+  const jobMatches = [];
 
-  for (const job of jobs) {
-    for (const skill of normaliseSkills(job.extractedSkills)) {
+  for (const [index, job] of jobs.entries()) {
+    const requiredSkills = normaliseSkills(job.extractedSkills);
+    for (const skill of requiredSkills) {
       skillDemand[skill] = (skillDemand[skill] || 0) + 1;
     }
+
+    const matchedSkills = requiredSkills.filter((skill) => hasSkill(cvSkills, skill));
+    const missingSkills = requiredSkills.filter((skill) => !hasSkill(cvSkills, skill));
+
+    jobMatches.push({
+      id: String(job.id || job.url || `${job.title || "job"}-${job.company || "company"}-${index}`),
+      title: job.title || "Untitled role",
+      company: job.company || "Unknown company",
+      location: job.location || "Malaysia",
+      url: job.url || "",
+      source: job.source || "",
+      requiredSkills,
+      matchedSkills,
+      missingSkills,
+      matchScore: requiredSkills.length === 0
+        ? null
+        : Math.round((matchedSkills.length / requiredSkills.length) * 100),
+    });
   }
 
   return {
     jobCount: jobs.length,
     skillDemand,
+    jobMatches: sortJobMatches(jobMatches),
   };
+}
+
+function sortJobMatches(jobMatches) {
+  return [...jobMatches].sort((a, b) => {
+    const matchedDifference = b.matchedSkills.length - a.matchedSkills.length;
+    if (matchedDifference !== 0) {
+      return matchedDifference;
+    }
+
+    const scoreDifference = scoreValue(b.matchScore) - scoreValue(a.matchScore);
+    if (scoreDifference !== 0) {
+      return scoreDifference;
+    }
+
+    const missingDifference = a.missingSkills.length - b.missingSkills.length;
+    if (missingDifference !== 0) {
+      return missingDifference;
+    }
+
+    return a.title.localeCompare(b.title);
+  });
+}
+
+function scoreValue(matchScore) {
+  return typeof matchScore === "number" ? matchScore : -1;
 }
 
 function sortMissingSkillsByDemand(skills, skillDemand) {
@@ -104,12 +150,28 @@ function normaliseSkills(skills = []) {
 
 function toDisplaySkill(skill) {
   const canonical = {
+    analytics: "Data Analytics",
+    "data analysis": "Data Analytics",
+    "data analytics": "Data Analytics",
     powerbi: "Power BI",
     "power bi": "Power BI",
     sql: "SQL",
     python: "Python",
     excel: "Excel",
     tableau: "Tableau",
+    "business intelligence": "Business Intelligence",
+    dashboard: "Dashboards",
+    dashboards: "Dashboards",
+    report: "Reporting",
+    reports: "Reporting",
+    reporting: "Reporting",
+    "data warehouse": "Data Warehouse",
+    "data warehousing": "Data Warehouse",
+    edw: "Data Warehouse",
+    aws: "AWS",
+    "amazon web services": "AWS",
+    azure: "Azure",
+    "microsoft azure": "Azure",
   };
   return canonical[skill.toLowerCase()] || skill;
 }

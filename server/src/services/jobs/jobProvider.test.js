@@ -44,7 +44,7 @@ test("uses Jooble first by default and normalizes job skills", async () => {
     assert.equal(calls[0].url, "https://jooble.org/api/jooble-key");
     assert.equal(JSON.parse(calls[0].options.body).keywords, "Data Analyst");
     assert.equal(JSON.parse(calls[0].options.body).location, "Sabah, Malaysia");
-    assert.deepEqual(result.jobs[0].extractedSkills, ["SQL", "Power BI"]);
+    assert.deepEqual(result.jobs[0].extractedSkills, ["SQL", "Power BI", "Dashboards", "Reporting"]);
   } finally {
     restoreFetch();
     restore();

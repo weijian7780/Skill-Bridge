@@ -89,3 +89,109 @@ test("requires a confirmed latest CV before analysis is ready", () => {
   assert.match(analysis.recommendation, /Upload and confirm/);
   assert.equal(analysis.marketEvidence.jobCount, 1);
 });
+
+test("matches equivalent CV and market skill names", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "Malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini 2.5 Flash",
+      technicalSkills: ["Data Analysis", "PowerBI"],
+    },
+    jobs: [
+      {
+        title: "Business Intelligence Analyst",
+        extractedSkills: ["Data Analytics", "Power BI"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.readinessScore, 100);
+  assert.deepEqual(analysis.matchedSkills, ["Data Analytics", "Power BI"]);
+  assert.deepEqual(analysis.missingSkills, []);
+});
+
+test("keeps per-company job requirement matches as market evidence", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "Malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini 2.5 Flash",
+      technicalSkills: ["SQL", "Data Analysis"],
+    },
+    jobs: [
+      {
+        id: "job-1",
+        title: "BI Analyst",
+        company: "TWO95 International",
+        location: "Malaysia",
+        url: "https://example.test/job-1",
+        extractedSkills: ["SQL", "Power BI", "Data Analytics"],
+      },
+      {
+        id: "job-2",
+        title: "Report Analyst",
+        company: "ResMed",
+        location: "Kuala Lumpur",
+        extractedSkills: ["Reporting", "Data Warehouse"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0], {
+    id: "job-1",
+    title: "BI Analyst",
+    company: "TWO95 International",
+    location: "Malaysia",
+    url: "https://example.test/job-1",
+    source: "",
+    requiredSkills: ["SQL", "Power BI", "Data Analytics"],
+    matchedSkills: ["SQL", "Data Analytics"],
+    missingSkills: ["Power BI"],
+    matchScore: 67,
+  });
+  assert.deepEqual(analysis.marketEvidence.jobMatches[1].matchedSkills, []);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[1].missingSkills, ["Reporting", "Data Warehouse"]);
+});
+
+test("does not score a company match when no job requirements are detected", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "Malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini 2.5 Flash",
+      technicalSkills: ["SQL"],
+    },
+    jobs: [
+      {
+        id: "job-without-skills",
+        title: "Senior Business Analyst - Trading System",
+        company: "Zeal Group",
+        location: "Malaysia",
+        source: "Jooble",
+        extractedSkills: [],
+      },
+    ],
+  });
+
+  assert.equal(analysis.marketEvidence.jobMatches[0].matchScore, null);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0].requiredSkills, []);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0].missingSkills, []);
+});

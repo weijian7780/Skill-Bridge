@@ -23,6 +23,10 @@ export function buildAnalysisActionLabel({ analysisStatus, jobStatus }) {
     return "Go to CV Upload";
   }
 
+  if (/failed to fetch/i.test(jobStatus)) {
+    return "Retry Job Search";
+  }
+
   if (isJobProviderProblem(jobStatus)) {
     return "Job API Unavailable";
   }

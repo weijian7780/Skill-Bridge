@@ -9,7 +9,7 @@ Real full-stack implementation for the SkillBridge AI Career Navigator MVP.
 - CV parsing: PDF, DOCX, JPG, PNG, and WebP on the server
 - Skill extraction: Gemini primary, local rule fallback
 - Job data: Jooble first, Careerjet fallback
-- Supabase: direct REST API support for profile snapshots
+- Supabase: direct REST API support for profile snapshots and job-search cache
 
 ## Setup
 
@@ -43,6 +43,10 @@ CAREERJET_AFFID=
 CAREERJET_API_KEY=
 CAREERJET_LOCALE=en_MY
 CLIENT_PUBLIC_URL=https://your-skillbridge-site.vercel.app
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_server_only_service_role_key
+JOB_CACHE_ENABLED=true
+JOB_CACHE_TTL_MINUTES=360
 ```
 
 `JOB_PROVIDER=auto` is the recommended setting. It tries Jooble first, then falls back to Careerjet if Jooble is missing, unavailable, or returns no usable jobs.
@@ -52,6 +56,8 @@ Use `JOB_PROVIDER=jooble` to force Jooble only, or `JOB_PROVIDER=careerjet` to f
 `JOOBLE_API_KEY` is the preferred job API key for local development because Jooble does not require a public website referer in the app's request flow. `CAREERJET_API_KEY` is still supported. `CAREERJET_AFFID` remains accepted only as a backward-compatible fallback variable name.
 
 Without `JOOBLE_API_KEY` or `CAREERJET_API_KEY`, the app still runs, but the job-search section reports that no job API is configured.
+
+Job searches are cached server-side in Supabase when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set. The cache key is based on provider, role, and location, so a second student searching the same role/location can reuse the saved result instead of spending another Jooble/Careerjet request. Default cache TTL is 360 minutes.
 
 ## Supabase
 
@@ -67,6 +73,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 `VITE_SUPABASE_ANON_KEY` is also accepted for older Supabase projects.
 
 Run the SQL in `supabase/schema.sql` inside Supabase SQL Editor before saving profile snapshots. The table uses Row Level Security, so real user-specific writes require Supabase Auth and the user's access token. Until Auth is wired, the app can still run without Supabase configured.
+
+The `job_search_cache` table is also created by `supabase/schema.sql`. It is intended for backend access through `SUPABASE_SERVICE_ROLE_KEY`; do not expose the service role key to the Vite client or Vercel frontend env variables.
 
 Data storage notes are in `docs/supabase-data-model.md`.
 

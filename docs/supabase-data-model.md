@@ -6,6 +6,8 @@ Use Supabase for user-owned SkillBridge state after login. V1 stores one profile
 
 The row is owned by the Supabase Auth user id. Client requests must include the student's JWT access token so Row Level Security can enforce ownership.
 
+Use a separate backend-owned `job_search_cache` table for shared job-search results. This cache is not user-owned profile data; it is keyed by provider, role, and location so repeated searches can reuse the same Jooble/Careerjet response until expiry.
+
 CV workflow:
 
 ```text
@@ -26,6 +28,26 @@ V1 does not keep CV history. A new confirmed CV replaces the previous `cv_docume
 | Roadmap | `roadmap_items` JSONB | Generated milestone titles, status, reason, resource. |
 | CV document metadata | `cv_document` JSONB | File name, MIME type, file size, storage path if Supabase Storage is used. |
 | Progress metrics | `readiness_score`, `roadmap_progress` | Dashboard and profile metrics. |
+| Job search cache | `job_search_cache.payload` JSONB | Short-lived backend cache for normalized job API results to reduce Jooble/Careerjet requests. |
+
+## Job Cache
+
+```text
+Student A searches Data Analyst Intern in Sabah
+-> Backend checks job_search_cache
+-> Cache miss: call Jooble/Careerjet
+-> Save provider result with expires_at
+-> Student B searches the same role/location
+-> Cache hit: use Supabase result without another job API call
+```
+
+The cache key is:
+
+```text
+provider|normalized role|normalized location
+```
+
+Default TTL is 360 minutes through `JOB_CACHE_TTL_MINUTES`. Backend access requires `SUPABASE_SERVICE_ROLE_KEY`. Do not expose that key to the Vite client.
 
 ## Do Not Store By Default
 
@@ -34,7 +56,7 @@ V1 does not keep CV history. A new confirmed CV replaces the previous `cv_docume
 | Raw CV text | Sensitive personal data; keep only extracted structured output unless user explicitly agrees. |
 | Raw LLM prompts/responses | Can contain CV content and personal details. |
 | Careerjet API key, Gemini API key | Secrets must stay in server `.env`, never client Supabase rows. |
-| Full job listings cache | Avoid storing third-party content unless license/terms permit it. Store saved job metadata only later. |
+| Long-term job listing archive | Job API results should stay short-lived cache entries unless the provider terms explicitly allow long-term storage. |
 
 ## Future Split
 

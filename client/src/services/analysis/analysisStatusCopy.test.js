@@ -30,4 +30,11 @@ test("explains that a stopped local API server blocks job-market results", () =>
 
   assert.match(message, /local API server/);
   assert.match(message, /4000/);
+  assert.equal(
+    buildAnalysisActionLabel({
+      analysisStatus: "needs_market",
+      jobStatus: "Failed to fetch",
+    }),
+    "Retry Job Search",
+  );
 });

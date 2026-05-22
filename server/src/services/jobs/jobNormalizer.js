@@ -41,6 +41,25 @@ export function stripHtml(value) {
 
 export function extractJobSkills(text) {
   const source = String(text).toLowerCase();
-  const terms = ["SQL", "Power BI", "Python", "Excel", "Data Cleaning", "Tableau", "Cloud Basics"];
-  return terms.filter((term) => source.includes(term.toLowerCase()));
+  const skillTerms = [
+    ["SQL", ["sql"]],
+    ["Power BI", ["power bi", "powerbi"]],
+    ["Python", ["python"]],
+    ["Excel", ["excel"]],
+    ["Data Cleaning", ["data cleaning", "data cleansing"]],
+    ["Tableau", ["tableau"]],
+    ["Data Analytics", ["data analytics", "data analysis", "analytics"]],
+    ["Business Intelligence", ["business intelligence", "bi analyst"]],
+    ["Dashboards", ["dashboard", "dashboards"]],
+    ["Reporting", ["reporting", "reports", "report "]],
+    ["Data Warehouse", ["data warehouse", "data warehousing", "edw"]],
+    ["AWS", ["aws", "amazon web services"]],
+    ["Azure", ["azure", "microsoft azure"]],
+    ["Figma", ["figma"]],
+    ["Cloud Basics", ["cloud basics", "cloud practitioner", "cloud infrastructure"]],
+  ];
+
+  return skillTerms
+    .filter(([, aliases]) => aliases.some((alias) => source.includes(alias)))
+    .map(([skill]) => skill);
 }

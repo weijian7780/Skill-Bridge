@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
 import { buildAnalysisActionLabel, buildAnalysisScoreMessage } from "../services/analysis/analysisStatusCopy.js";
+import {
+  getCompanyMatchToggleLabel,
+  getVisibleCompanyMatches,
+  shouldShowCompanyMatchToggle,
+} from "../services/analysis/companyMatchDisplay.js";
 import { searchMarketJobs } from "../services/jobs/jobApi.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 
@@ -17,11 +22,18 @@ export function AnalysisPage() {
     setJobStatus,
     skillProfile,
   } = useAppState();
+  const [jobSearchAttempt, setJobSearchAttempt] = useState(0);
+  const [showAllCompanyMatches, setShowAllCompanyMatches] = useState(false);
   const lastJobSearchKey = useRef("");
   const isReady = analysis.status === "ready";
   const hasConfirmedCv = analysis.status !== "needs_cv";
   const missingSkills = analysis.missingSkills;
   const matchedSkills = analysis.matchedSkills;
+  const confirmedCvSkills = [
+    ...(skillProfile.technicalSkills ?? []),
+    ...(skillProfile.softSkills ?? []),
+    ...(skillProfile.certifications ?? []),
+  ].filter(Boolean);
   const scoreMessage = buildAnalysisScoreMessage({
     analysisStatus: analysis.status,
     jobStatus,
@@ -38,13 +50,22 @@ export function AnalysisPage() {
         .slice(0, 4),
     [analysis.marketEvidence.skillDemand],
   );
+  const allCompanyRequirementMatches = analysis.marketEvidence.jobMatches ?? [];
+  const companyRequirementMatches = useMemo(
+    () => getVisibleCompanyMatches(allCompanyRequirementMatches, { showAll: showAllCompanyMatches }),
+    [allCompanyRequirementMatches, showAllCompanyMatches],
+  );
+  const showCompanyMatchToggle = useMemo(
+    () => shouldShowCompanyMatchToggle(allCompanyRequirementMatches),
+    [allCompanyRequirementMatches],
+  );
 
   useEffect(() => {
     if (!hasConfirmedCv) {
       return;
     }
 
-    const searchKey = `${careerTarget.role}|${careerTarget.region}`;
+    const searchKey = `${careerTarget.role}|${careerTarget.region}|${jobSearchAttempt}`;
     if (lastJobSearchKey.current === searchKey) {
       return;
     }
@@ -67,16 +88,18 @@ export function AnalysisPage() {
 
         const loadedJobs = result.jobs ?? [];
         const providerName = result.source || "Job provider";
+        const cacheLabel = result.cached ? "cached " : "";
         setJobs(loadedJobs);
         setJobStatus(
           result.configured
-            ? `Loaded ${loadedJobs.length} ${providerName} jobs for this target.`
+            ? `Loaded ${loadedJobs.length} ${cacheLabel}${providerName} jobs for this target.`
             : result.message || "Job API key not configured.",
         );
       } catch (error) {
         if (!cancelled) {
           setJobs([]);
           setJobStatus(error.message);
+          lastJobSearchKey.current = "";
         }
       }
     }
@@ -86,7 +109,11 @@ export function AnalysisPage() {
     return () => {
       cancelled = true;
     };
-  }, [careerTarget.region, careerTarget.role, hasConfirmedCv, setJobStatus, setJobs]);
+  }, [careerTarget.region, careerTarget.role, hasConfirmedCv, jobSearchAttempt, setJobStatus, setJobs]);
+
+  function retryJobSearch() {
+    setJobSearchAttempt((attempt) => attempt + 1);
+  }
 
   return (
     <PageShell>
@@ -132,7 +159,11 @@ export function AnalysisPage() {
             </div>
             <div className="mt-8 flex justify-end">
               {analysis.status === "needs_market" ? (
-                <button className="bg-surface-container-highest text-on-surface-variant px-8 py-3 rounded-xl font-headline-md flex items-center gap-2 cursor-not-allowed" disabled>
+                <button
+                  className="bg-surface-container-highest text-on-surface-variant px-8 py-3 rounded-xl font-headline-md flex items-center gap-2 hover:border hover:border-primary disabled:cursor-not-allowed"
+                  disabled={!hasConfirmedCv}
+                  onClick={retryJobSearch}
+                >
                   {actionLabel}
                 </button>
               ) : (
@@ -157,9 +188,24 @@ export function AnalysisPage() {
                 </div>
               ))}
               {matchedSkills.length === 0 && (
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  {analysis.status === "needs_market" ? "Market job skills have not loaded yet." : "No confirmed CV skills yet."}
-                </p>
+                <div className="space-y-sm">
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    {analysis.status === "needs_market"
+                      ? "Market job skills have not loaded yet."
+                      : isReady
+                        ? "No CV skills matched the current market skills yet."
+                        : "No confirmed CV skills yet."}
+                  </p>
+                  {isReady && confirmedCvSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-xs">
+                      {confirmedCvSkills.slice(0, 8).map((skill) => (
+                        <span key={skill} className="bg-surface-container-highest border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
+                          CV: {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </section>
@@ -237,6 +283,143 @@ export function AnalysisPage() {
                 )}
               </div>
             </div>
+          </section>
+
+          <section className="md:col-span-12 bg-surface-container border border-outline-variant rounded-xl p-md">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-sm mb-md">
+              <div>
+                <div className="flex items-center gap-2 mb-xs">
+                  <Icon name="business_center" className="text-primary" />
+                  <h3 className="font-headline-md text-headline-md text-on-surface">Company Requirement Matches</h3>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  These are the live job posts used to compare company requirements against your latest CV skills.
+                </p>
+              </div>
+              {companyRequirementMatches.length > 0 && (
+                <span className="font-label-sm text-label-sm text-primary uppercase tracking-wider">
+                  Showing {companyRequirementMatches.length} of {analysis.marketEvidence.jobCount}
+                </span>
+              )}
+            </div>
+
+            {companyRequirementMatches.length === 0 ? (
+              <p className="font-body-sm text-body-sm text-on-surface-variant">
+                No company requirement evidence is available yet. Upload a CV and load market jobs first.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-sm">
+                  {companyRequirementMatches.map((job) => (
+                    <article key={job.id} className="bg-surface-container-low border border-outline-variant rounded-xl p-md">
+                      <div className="flex items-start justify-between gap-sm mb-sm">
+                        <div>
+                          <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider">
+                            {job.company}
+                          </p>
+                          <h4 className="font-headline-md text-headline-md text-on-surface mt-xs">
+                            {job.title}
+                          </h4>
+                          <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+                            {[job.location, job.source].filter(Boolean).join(" | ")}
+                          </p>
+                        </div>
+                        <div className="min-w-16 text-center rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+                          <span className="block font-headline-md text-headline-md text-primary">
+                            {job.matchScore === null ? "N/A" : `${job.matchScore}%`}
+                          </span>
+                          <span className="block font-label-sm text-label-sm text-on-surface-variant">
+                            {job.matchScore === null ? "not scored" : "match"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-sm">
+                        <div>
+                          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
+                            Requirements Detected
+                          </p>
+                          <div className="flex flex-wrap gap-xs">
+                            {job.requiredSkills.length > 0 ? (
+                              job.requiredSkills.map((skill) => (
+                                <span key={skill} className="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
+                                  {skill}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="font-body-sm text-body-sm text-on-surface-variant">No skills detected from this job text.</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
+                            Matched With CV
+                          </p>
+                          <div className="flex flex-wrap gap-xs">
+                            {job.matchedSkills.length > 0 ? (
+                              job.matchedSkills.map((skill) => (
+                                <span key={skill} className="bg-primary-container/20 border border-primary/30 text-primary px-3 py-1 rounded-full font-label-sm text-label-sm">
+                                  {skill}
+                                </span>
+                              ))
+                            ) : job.requiredSkills.length === 0 ? (
+                              <span className="font-body-sm text-body-sm text-on-surface-variant">No detected requirements to compare with your CV.</span>
+                            ) : (
+                              <span className="font-body-sm text-body-sm text-on-surface-variant">No resume overlap for this company yet.</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
+                            Still Missing
+                          </p>
+                          <div className="flex flex-wrap gap-xs">
+                            {job.requiredSkills.length === 0 ? (
+                              <span className="font-body-sm text-body-sm text-on-surface-variant">No requirements were detected from this job post, so missing skills cannot be calculated.</span>
+                            ) : job.missingSkills.length > 0 ? (
+                              job.missingSkills.map((skill) => (
+                                <span key={skill} className="border border-orange-500/50 text-orange-400 bg-orange-500/5 px-3 py-1 rounded-full font-label-sm text-label-sm">
+                                  {skill}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="font-body-sm text-body-sm text-primary">Your CV covers all detected requirements for this job.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {job.url && (
+                        <a
+                          className="inline-flex items-center gap-xs text-primary hover:underline font-label-md text-label-md mt-md"
+                          href={job.url}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Open job post
+                          <Icon name="open_in_new" className="text-[18px]" />
+                        </a>
+                      )}
+                    </article>
+                  ))}
+                </div>
+
+                {showCompanyMatchToggle && (
+                  <div className="flex justify-center mt-md">
+                    <button
+                      className="inline-flex items-center gap-xs border border-primary text-primary px-6 py-3 rounded-xl font-label-md text-label-md hover:bg-primary/10 active:scale-95 transition-all"
+                      onClick={() => setShowAllCompanyMatches((current) => !current)}
+                      type="button"
+                    >
+                      {getCompanyMatchToggleLabel(showAllCompanyMatches)}
+                      <Icon name={showAllCompanyMatches ? "expand_less" : "expand_more"} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </section>
         </div>
       </main>
