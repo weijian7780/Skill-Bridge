@@ -7,6 +7,7 @@ import { buildSkillGapAnalysis } from "../services/analysis/skillGapEngine.js";
 import {
   applySkillProfileEdits,
   buildCvExtractionDraft,
+  buildLatestCvConfirmation,
   listToText,
 } from "../services/cv/cvExtractionDraft.js";
 import { uploadCv } from "../services/cv/cvApi.js";
@@ -37,6 +38,7 @@ export function CvUploadPage() {
     careerTarget,
     cvDocument,
     setCvDocument,
+    setRoadmapPlan,
     setSkillProfile,
     skillProfile,
     syncStatus,
@@ -106,16 +108,26 @@ export function CvUploadPage() {
     handleFile(event.dataTransfer.files?.[0]);
   }
 
-  function confirmLatestCv() {
-    if (!pendingDraft || !reviewedSkillProfile) {
+  function confirmLatestCv({ openAnalysis = false } = {}) {
+    const confirmation = buildLatestCvConfirmation({
+      pendingDraft,
+      reviewedSkillProfile,
+    });
+
+    if (!confirmation) {
       return;
     }
 
-    setSkillProfile(reviewedSkillProfile);
-    setCvDocument(pendingDraft.cvDocument);
+    setSkillProfile(confirmation.skillProfile);
+    setCvDocument(confirmation.cvDocument);
+    setRoadmapPlan(null);
     setPendingDraft(null);
     setEdits(null);
     setStatus("Latest CV confirmed. Supabase sync will save this profile snapshot.");
+
+    if (openAnalysis) {
+      navigate("/analysis");
+    }
   }
 
   const savedSkills = skillProfile.technicalSkills ?? [];
@@ -178,7 +190,7 @@ export function CvUploadPage() {
 
             {cvDocument && !pendingDraft && (
               <article className="bg-surface-container border border-outline-variant rounded-xl p-md">
-                <div className="flex items-center justify-between gap-sm">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-sm">
                   <div>
                     <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider">Saved latest CV</p>
                     <h2 className="font-headline-md text-headline-md text-on-surface mt-1">{cvDocument.fileName}</h2>
@@ -186,7 +198,16 @@ export function CvUploadPage() {
                       {cvDocument.mimeType || "Unknown type"} - {formatBytes(cvDocument.sizeBytes)} - {cvDocument.textLength ?? 0} extracted characters
                     </p>
                   </div>
-                  <Icon name="cloud_done" className="text-primary" />
+                  <div className="flex items-center gap-sm">
+                    <Icon name="cloud_done" className="text-primary" />
+                    <button
+                      className="rounded-lg bg-primary px-md py-sm font-label-md text-label-md text-on-primary active:scale-[0.98]"
+                      onClick={() => navigate("/analysis")}
+                      type="button"
+                    >
+                      Go to Analysis
+                    </button>
+                  </div>
                 </div>
                 <p className="font-body-sm text-body-sm text-on-surface-variant mt-sm">{syncStatus}</p>
               </article>
@@ -297,11 +318,11 @@ export function CvUploadPage() {
                   )}
 
                   <div className="flex flex-col sm:flex-row gap-sm">
-                    <button className="flex-1 rounded-lg bg-primary px-md py-sm font-label-md text-label-md text-on-primary active:scale-[0.98]" onClick={confirmLatestCv}>
+                    <button className="flex-1 rounded-lg bg-primary px-md py-sm font-label-md text-label-md text-on-primary active:scale-[0.98]" onClick={() => confirmLatestCv()} type="button">
                       Confirm Latest CV
                     </button>
-                    <button className="flex-1 rounded-lg border border-outline-variant px-md py-sm font-label-md text-label-md text-on-surface-variant active:scale-[0.98]" onClick={() => navigate("/analysis")}>
-                      Go to Analysis
+                    <button className="flex-1 rounded-lg border border-primary px-md py-sm font-label-md text-label-md text-primary active:scale-[0.98]" onClick={() => confirmLatestCv({ openAnalysis: true })} type="button">
+                      Confirm and Analyze
                     </button>
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">{status}</p>

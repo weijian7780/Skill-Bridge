@@ -1,17 +1,20 @@
 import { Link } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { getRegionAnalysisCopy, getRegionOption } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 
 export function HomePage() {
   const { analysis, careerTarget, missingSkills } = useAppState();
+  const regionCopy = getRegionAnalysisCopy(careerTarget.region);
+  const regionLabel = getRegionOption(careerTarget.region).label;
   const priorityTitle = analysis.status === "ready"
     ? `Review your ${missingSkills.length} market skill gaps`
     : analysis.status === "needs_market"
       ? "Load job-market analysis"
       : "Upload your latest CV";
   const priorityCopy = analysis.status === "ready"
-    ? `Your CV is being compared with live job listings for ${careerTarget.role} in ${careerTarget.region}.`
+    ? `Your CV is being compared with live job listings for ${careerTarget.role} ${regionCopy}.`
     : analysis.status === "needs_market"
       ? "Job API results are required before SkillBridge can calculate real market gaps."
       : "Confirm your latest CV before the app compares your resume with market jobs.";
@@ -27,7 +30,7 @@ export function HomePage() {
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
             Your journey to becoming a <span className="text-primary font-semibold">{careerTarget.role}</span> in{" "}
-            <span className="text-primary font-semibold">{careerTarget.region.replace(", Malaysia", "")}</span>.
+            <span className="text-primary font-semibold">{regionLabel}</span>.
           </p>
         </section>
 

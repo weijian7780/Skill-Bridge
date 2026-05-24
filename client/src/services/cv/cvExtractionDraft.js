@@ -51,3 +51,14 @@ export function applySkillProfileEdits({ skillProfile, edits }) {
     warnings: skillProfile.warnings ?? [],
   };
 }
+
+export function buildLatestCvConfirmation({ pendingDraft, reviewedSkillProfile }) {
+  if (!pendingDraft || !reviewedSkillProfile) {
+    return null;
+  }
+
+  return {
+    cvDocument: pendingDraft.cvDocument,
+    skillProfile: reviewedSkillProfile,
+  };
+}

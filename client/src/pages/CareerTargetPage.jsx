@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { regionOptions } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 
 const companyOptions = ["MNC", "Startup", "GLC", "SME"];
@@ -66,10 +67,9 @@ export function CareerTargetPage() {
                 <div className="space-y-2">
                   <label className="block font-label-md text-label-md text-on-surface-variant" htmlFor="region">Region Preference</label>
                   <select className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-all" id="region" value={draft.region} onChange={(event) => setDraft({ ...draft, region: event.target.value })}>
-                    <option>Sabah, Malaysia</option>
-                    <option>Remote</option>
-                    <option>Kuala Lumpur</option>
-                    <option>Singapore</option>
+                    {regionOptions.map((region) => (
+                      <option key={region.id} value={region.id}>{region.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>

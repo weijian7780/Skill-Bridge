@@ -13,11 +13,11 @@ export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, 
       missingSkills: [],
       prioritySkill: "",
       recommendation: "Upload and confirm your latest CV before running skill-gap analysis.",
-      marketEvidence: buildMarketEvidence(jobs, cvSkills),
+      marketEvidence: buildMarketEvidence(jobs, cvSkills, careerTarget),
     };
   }
 
-  const marketEvidence = buildMarketEvidence(jobs, cvSkills);
+  const marketEvidence = buildMarketEvidence(jobs, cvSkills, careerTarget);
   const requiredSkills = Object.keys(marketEvidence.skillDemand);
 
   if (requiredSkills.length === 0) {
@@ -37,9 +37,7 @@ export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, 
     requiredSkills.filter((skill) => !hasSkill(cvSkills, skill)),
     marketEvidence.skillDemand,
   );
-  const readinessScore = requiredSkills.length === 0
-    ? 0
-    : Math.round((matchedSkills.length / requiredSkills.length) * 100);
+  const readinessScore = averageTopMatchScores(marketEvidence.jobMatches);
   const prioritySkill = missingSkills[0] || "";
 
   return {
@@ -53,12 +51,22 @@ export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, 
   };
 }
 
-function buildMarketEvidence(jobs = [], cvSkills = []) {
+function buildMarketEvidence(jobs = [], cvSkills = [], careerTarget = {}) {
   const skillDemand = {};
   const jobMatches = [];
+  let excludedJobCount = 0;
 
   for (const [index, job] of jobs.entries()) {
     const requiredSkills = normaliseSkills(job.extractedSkills);
+    if (requiredSkills.length === 0) {
+      continue;
+    }
+
+    if (!isRelevantJobPosting(job, careerTarget)) {
+      excludedJobCount += 1;
+      continue;
+    }
+
     for (const skill of requiredSkills) {
       skillDemand[skill] = (skillDemand[skill] || 0) + 1;
     }
@@ -76,42 +84,121 @@ function buildMarketEvidence(jobs = [], cvSkills = []) {
       requiredSkills,
       matchedSkills,
       missingSkills,
-      matchScore: requiredSkills.length === 0
-        ? null
-        : Math.round((matchedSkills.length / requiredSkills.length) * 100),
+      matchScore: Math.round((matchedSkills.length / requiredSkills.length) * 100),
     });
   }
 
   return {
-    jobCount: jobs.length,
+    rawJobCount: jobs.length,
+    jobCount: jobMatches.length,
+    excludedJobCount,
     skillDemand,
     jobMatches: sortJobMatches(jobMatches),
   };
 }
 
+function isRelevantJobPosting(job, careerTarget = {}) {
+  const role = normalizeText(careerTarget.role);
+  if (!role) {
+    return true;
+  }
+
+  const text = normalizeText(`${job.title || ""} ${job.description || ""}`);
+  if (!text) {
+    return false;
+  }
+
+  if (text.includes(role)) {
+    return true;
+  }
+
+  if (isUiUxRole(role)) {
+    return containsAny(text, ["ui ux", "ui/ux", "user interface", "user experience", "product designer", "designer"]);
+  }
+
+  if (role.includes("data") && role.includes("analyst")) {
+    return containsAny(text, [
+      "data analyst",
+      "business intelligence",
+      "bi analyst",
+      "report analyst",
+      "reporting analyst",
+      "analytics analyst",
+      "analyst",
+    ]) && containsAny(text, ["data", "analytics", "business intelligence", "bi", "report"]);
+  }
+
+  if (role.includes("business intelligence") || role === "bi" || role.includes(" bi ")) {
+    return containsAny(text, ["business intelligence", "bi analyst", "dashboard", "reporting", "data warehouse"]);
+  }
+
+  const roleTokens = meaningfulRoleTokens(role);
+  return roleTokens.length === 0 || roleTokens.every((token) => text.includes(token));
+}
+
+function isUiUxRole(role) {
+  return role.includes("ui") || role.includes("ux") || role.includes("designer") || role.includes("user interface") || role.includes("user experience");
+}
+
+function meaningfulRoleTokens(role) {
+  const stopWords = new Set([
+    "junior",
+    "senior",
+    "intern",
+    "internship",
+    "entry",
+    "level",
+    "trainee",
+    "assistant",
+  ]);
+
+  return role
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 1 && !stopWords.has(token));
+}
+
+function containsAny(text, fragments) {
+  return fragments.some((fragment) => text.includes(normalizeText(fragment)));
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9+#/]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function sortJobMatches(jobMatches) {
   return [...jobMatches].sort((a, b) => {
+    const scoreDifference = b.matchScore - a.matchScore;
+    if (scoreDifference !== 0) {
+      return scoreDifference;
+    }
+
     const matchedDifference = b.matchedSkills.length - a.matchedSkills.length;
     if (matchedDifference !== 0) {
       return matchedDifference;
     }
 
-    const scoreDifference = scoreValue(b.matchScore) - scoreValue(a.matchScore);
-    if (scoreDifference !== 0) {
-      return scoreDifference;
-    }
-
-    const missingDifference = a.missingSkills.length - b.missingSkills.length;
-    if (missingDifference !== 0) {
-      return missingDifference;
+    const requirementDifference = b.requiredSkills.length - a.requiredSkills.length;
+    if (requirementDifference !== 0) {
+      return requirementDifference;
     }
 
     return a.title.localeCompare(b.title);
   });
 }
 
-function scoreValue(matchScore) {
-  return typeof matchScore === "number" ? matchScore : -1;
+function averageTopMatchScores(jobMatches) {
+  const topMatches = jobMatches.slice(0, 5);
+  if (topMatches.length === 0) {
+    return 0;
+  }
+
+  const totalScore = topMatches.reduce((sum, job) => sum + job.matchScore, 0);
+  return Math.round(totalScore / topMatches.length);
 }
 
 function sortMissingSkillsByDemand(skills, skillDemand) {

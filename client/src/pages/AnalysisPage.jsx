@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
-import { buildAnalysisActionLabel, buildAnalysisScoreMessage } from "../services/analysis/analysisStatusCopy.js";
+import { buildAnalysisActionLabel } from "../services/analysis/analysisStatusCopy.js";
+import {
+  buildDiagnosticScoreDisplay,
+  buildSkillEvidenceRows,
+} from "../services/analysis/analysisDiagnosticDisplay.js";
 import {
   getCompanyMatchToggleLabel,
   getVisibleCompanyMatches,
   shouldShowCompanyMatchToggle,
 } from "../services/analysis/companyMatchDisplay.js";
+import { buildMarketEvidenceOverview } from "../services/analysis/marketEvidenceDisplay.js";
+import { getRegionAnalysisCopy, getRegionSearchValue } from "../services/career/regionOptions.js";
 import { searchMarketJobs } from "../services/jobs/jobApi.js";
+import { generateRoadmapFromAnalysis } from "../services/roadmap/roadmapApi.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 
 export function AnalysisPage() {
@@ -20,10 +27,14 @@ export function AnalysisPage() {
     jobStatus,
     setJobs,
     setJobStatus,
+    setRoadmapPlan,
     skillProfile,
   } = useAppState();
+  const navigate = useNavigate();
   const [jobSearchAttempt, setJobSearchAttempt] = useState(0);
   const [showAllCompanyMatches, setShowAllCompanyMatches] = useState(false);
+  const [roadmapGenerationStatus, setRoadmapGenerationStatus] = useState("");
+  const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
   const lastJobSearchKey = useRef("");
   const isReady = analysis.status === "ready";
   const hasConfirmedCv = analysis.status !== "needs_cv";
@@ -34,22 +45,48 @@ export function AnalysisPage() {
     ...(skillProfile.softSkills ?? []),
     ...(skillProfile.certifications ?? []),
   ].filter(Boolean);
-  const scoreMessage = buildAnalysisScoreMessage({
-    analysisStatus: analysis.status,
-    jobStatus,
-    matchedCount: matchedSkills.length,
-  });
   const actionLabel = buildAnalysisActionLabel({
     analysisStatus: analysis.status,
     jobStatus,
   });
-  const topDemandedSkills = useMemo(
-    () =>
-      Object.entries(analysis.marketEvidence.skillDemand)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 4),
-    [analysis.marketEvidence.skillDemand],
+  const scoreDisplay = useMemo(
+    () => buildDiagnosticScoreDisplay({ analysis, careerTarget }),
+    [analysis, careerTarget],
   );
+  const matchedSkillRows = useMemo(
+    () =>
+      buildSkillEvidenceRows({
+        skills: matchedSkills,
+        skillDemand: analysis.marketEvidence.skillDemand,
+        jobMatches: analysis.marketEvidence.jobMatches,
+        evidenceKey: "matchedSkills",
+      }),
+    [analysis.marketEvidence.jobMatches, analysis.marketEvidence.skillDemand, matchedSkills],
+  );
+  const missingSkillRows = useMemo(
+    () =>
+      buildSkillEvidenceRows({
+        skills: missingSkills,
+        skillDemand: analysis.marketEvidence.skillDemand,
+        jobMatches: analysis.marketEvidence.jobMatches,
+        evidenceKey: "missingSkills",
+      }),
+    [analysis.marketEvidence.jobMatches, analysis.marketEvidence.skillDemand, missingSkills],
+  );
+  const marketEvidenceOverview = useMemo(
+    () =>
+      buildMarketEvidenceOverview({
+        careerTarget,
+        cvDocument,
+        jobs,
+        relevantJobCount: analysis.marketEvidence.jobCount,
+        excludedJobCount: analysis.marketEvidence.excludedJobCount,
+        skillDemand: analysis.marketEvidence.skillDemand,
+      }),
+    [analysis.marketEvidence.skillDemand, careerTarget, cvDocument, jobs],
+  );
+  const regionSearchValue = getRegionSearchValue(careerTarget.region);
+  const regionAnalysisCopy = getRegionAnalysisCopy(careerTarget.region);
   const allCompanyRequirementMatches = analysis.marketEvidence.jobMatches ?? [];
   const companyRequirementMatches = useMemo(
     () => getVisibleCompanyMatches(allCompanyRequirementMatches, { showAll: showAllCompanyMatches }),
@@ -65,7 +102,7 @@ export function AnalysisPage() {
       return;
     }
 
-    const searchKey = `${careerTarget.role}|${careerTarget.region}|${jobSearchAttempt}`;
+    const searchKey = `${careerTarget.role}|${regionSearchValue}|${jobSearchAttempt}`;
     if (lastJobSearchKey.current === searchKey) {
       return;
     }
@@ -73,13 +110,13 @@ export function AnalysisPage() {
     let cancelled = false;
     lastJobSearchKey.current = searchKey;
     setJobs([]);
-    setJobStatus(`Loading market jobs for ${careerTarget.role} in ${careerTarget.region}...`);
+    setJobStatus(`Loading market jobs for ${careerTarget.role} ${regionAnalysisCopy}...`);
 
     async function loadJobs() {
       try {
         const result = await searchMarketJobs({
           role: careerTarget.role,
-          region: careerTarget.region,
+          region: regionSearchValue,
         });
 
         if (cancelled) {
@@ -109,10 +146,45 @@ export function AnalysisPage() {
     return () => {
       cancelled = true;
     };
-  }, [careerTarget.region, careerTarget.role, hasConfirmedCv, jobSearchAttempt, setJobStatus, setJobs]);
+  }, [careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionAnalysisCopy, regionSearchValue, setJobStatus, setJobs]);
 
   function retryJobSearch() {
     setJobSearchAttempt((attempt) => attempt + 1);
+  }
+
+  async function generateRoadmap() {
+    if (!isReady) {
+      return;
+    }
+
+    if (missingSkills.length === 0) {
+      setRoadmapPlan({
+        overview: "No missing market skills were detected for this target.",
+        items: [],
+        assumptions: [],
+        confidence: 1,
+        source: "deterministic",
+      });
+      navigate("/roadmap");
+      return;
+    }
+
+    setIsGeneratingRoadmap(true);
+    setRoadmapGenerationStatus("");
+
+    try {
+      const result = await generateRoadmapFromAnalysis({
+        careerTarget,
+        skillProfile,
+        analysis,
+      });
+      setRoadmapPlan(result.roadmap);
+      navigate("/roadmap");
+    } catch (error) {
+      setRoadmapGenerationStatus(error.message);
+    } finally {
+      setIsGeneratingRoadmap(false);
+    }
   }
 
   return (
@@ -133,29 +205,46 @@ export function AnalysisPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
           <section className="md:col-span-4 bg-surface-container border border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center">
-            <h3 className="font-label-md text-label-md text-on-surface-variant mb-6 uppercase tracking-wider">{careerTarget.role.toUpperCase()} MATCH</h3>
-            <div className="radial-progress relative mb-4" style={{ "--value": analysis.readinessScore }}>
-              <span className="font-headline-xl text-headline-xl text-primary">{analysis.readinessScore}%</span>
+            <h3 className="font-label-md text-label-md text-on-surface-variant mb-6 uppercase tracking-wider">{scoreDisplay.label}</h3>
+            <div className="radial-progress relative mb-4" style={{ "--value": scoreDisplay.isCalculated ? analysis.readinessScore : 0 }}>
+              <span className={`${scoreDisplay.isCalculated ? "font-headline-xl text-headline-xl" : "font-headline-md text-headline-md"} text-primary`}>
+                {scoreDisplay.value}
+              </span>
             </div>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              {scoreMessage}
+              {scoreDisplay.formula}
             </p>
           </section>
 
           <section className="md:col-span-8 bg-surface-container border border-outline-variant rounded-xl p-md flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Icon name="smart_toy" className="text-primary" />
-                <h3 className="font-headline-md text-headline-md text-primary">AI Recommendation</h3>
+                <Icon name="query_stats" className="text-primary" />
+                <h3 className="font-headline-md text-headline-md text-primary">{scoreDisplay.diagnosisTitle}</h3>
               </div>
               <p className="font-headline-lg text-headline-lg leading-relaxed text-on-surface">
-                {analysis.recommendation}
+                {scoreDisplay.diagnosisHeadline}
               </p>
-              {isReady && analysis.prioritySkill && (
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-sm">
-                  Priority gap: <span className="text-primary font-semibold">{analysis.prioritySkill}</span>
+              <div className="mt-md grid grid-cols-1 md:grid-cols-2 gap-sm">
+                {scoreDisplay.diagnosisFacts.map((fact) => (
+                  <div key={fact.label} className="rounded-lg border border-outline-variant bg-surface-container-low p-sm">
+                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
+                      {fact.label}
+                    </p>
+                    <p className="font-body-sm text-body-sm text-on-surface">
+                      {fact.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-sm rounded-lg border border-primary/20 bg-primary-container/10 p-sm">
+                <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">
+                  Priority interpretation
                 </p>
-              )}
+                <p className="font-body-sm text-body-sm text-on-surface">
+                  {scoreDisplay.priorityInterpretation}
+                </p>
+              </div>
             </div>
             <div className="mt-8 flex justify-end">
               {analysis.status === "needs_market" ? (
@@ -166,6 +255,16 @@ export function AnalysisPage() {
                 >
                   {actionLabel}
                 </button>
+              ) : analysis.status === "ready" ? (
+                <button
+                  className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isGeneratingRoadmap}
+                  onClick={generateRoadmap}
+                  type="button"
+                >
+                  {isGeneratingRoadmap ? "Generating Roadmap..." : "Build Roadmap From These Gaps"}
+                  <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
+                </button>
               ) : (
                 <Link className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 group" to={isReady ? "/roadmap" : "/cv"}>
                   {actionLabel}
@@ -173,21 +272,40 @@ export function AnalysisPage() {
                 </Link>
               )}
             </div>
+            {roadmapGenerationStatus && (
+              <p className="mt-sm font-body-sm text-body-sm text-error">
+                {roadmapGenerationStatus}
+              </p>
+            )}
           </section>
 
           <section className="md:col-span-6 bg-surface-container border border-outline-variant rounded-xl p-md">
             <div className="flex items-center gap-2 mb-6">
               <Icon name="check_circle" className="text-primary" />
-              <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Matched Skills</h3>
+              <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Matched Skills with Evidence</h3>
             </div>
-            <div className="flex flex-wrap gap-sm">
-              {matchedSkills.map((skill) => (
-                <div key={skill} className="bg-primary-container/20 border border-primary/30 text-primary px-4 py-2 rounded-full font-label-md flex items-center gap-2">
-                  {skill}
-                  <Icon name="verified" filled className="text-[16px]" />
+            <div className="space-y-sm">
+              {matchedSkillRows.map((row) => (
+                <div key={row.skill} className="rounded-lg border border-primary/20 bg-primary-container/10 p-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-xs">
+                    <div className="flex items-center gap-xs text-primary">
+                      <Icon name="verified" filled className="text-[16px]" />
+                      <span className="font-label-md text-label-md">{row.skill}</span>
+                    </div>
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">{row.countLabel}</span>
+                  </div>
+                  {row.companies.length > 0 && (
+                    <div className="flex flex-wrap gap-xs mt-xs">
+                      {row.companies.map((company) => (
+                        <span key={company} className="bg-surface-container-highest border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
+                          {company}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
-              {matchedSkills.length === 0 && (
+              {matchedSkillRows.length === 0 && (
                 <div className="space-y-sm">
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
                     {analysis.status === "needs_market"
@@ -213,17 +331,30 @@ export function AnalysisPage() {
           <section className="md:col-span-6 bg-surface-container border border-outline-variant rounded-xl p-md">
             <div className="flex items-center gap-2 mb-6">
               <Icon name="flag" className="text-secondary" />
-              <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Gaps to Bridge</h3>
+              <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Priority Gaps by Market Frequency</h3>
             </div>
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-sm">
-                {missingSkills.slice(0, 2).map((skill) => (
-                  <div key={skill} className="border-2 border-orange-500/50 text-orange-400 px-4 py-2 rounded-xl font-label-md flex items-center gap-2 bg-orange-500/5">
-                    <Icon name="priority_high" className="text-[18px]" />
-                    {skill}
+            <div className="space-y-sm">
+              {missingSkillRows.map((row, index) => (
+                <div key={row.skill} className={`${index === 0 ? "border-orange-500/50 bg-orange-500/5" : "border-outline-variant bg-surface-container-low"} rounded-lg border p-sm`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-xs">
+                    <div className={index === 0 ? "text-orange-400" : "text-on-surface"}>
+                      <span className="font-label-md text-label-md">{row.skill}</span>
+                    </div>
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">{row.countLabel}</span>
                   </div>
-                ))}
-                {missingSkills.length === 0 && (
+                  {row.companies.length > 0 && (
+                    <div className="flex flex-wrap gap-xs mt-xs">
+                      {row.companies.map((company) => (
+                        <span key={company} className="bg-surface-container-highest border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
+                          {company}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {missingSkillRows.length === 0 && (
+                <div className="flex flex-wrap gap-sm">
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
                     {isReady
                       ? "No missing market job skills detected for the current target."
@@ -231,61 +362,76 @@ export function AnalysisPage() {
                         ? "Market job skills are required before gaps can be calculated."
                         : "Confirm a latest CV to calculate gaps."}
                   </p>
-                )}
-              </div>
-              {missingSkills.length > 2 && (
-                <div className="flex flex-wrap gap-sm">
-                  {missingSkills.slice(2).map((skill) => (
-                    <div key={skill} className="bg-surface-container-highest border border-outline-variant text-on-surface-variant px-4 py-2 rounded-xl font-label-md">
-                      {skill}
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
           </section>
 
-          <section className="md:col-span-12 bg-surface-container-low border border-outline-variant rounded-xl p-md overflow-hidden relative group">
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
-              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#57f1db_0%,transparent_50%)]" />
-            </div>
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-              <div className="w-full md:w-1/3 h-32 rounded-lg bg-surface-container-high border border-outline-variant overflow-hidden">
-                <div className="w-full h-full bg-[linear-gradient(135deg,#0d1c2d,#57f1db22),repeating-linear-gradient(90deg,#57f1db22_0_2px,transparent_2px_32px)]" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-headline-md text-headline-md text-on-surface mb-2">Market Evidence for {careerTarget.role}</h4>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  {jobStatus}
-                </p>
-                <div className="mt-sm grid grid-cols-1 md:grid-cols-3 gap-sm">
-                  <div className="rounded-lg border border-outline-variant bg-surface-container p-sm">
-                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Latest CV</p>
-                    <p className="font-body-sm text-body-sm text-on-surface mt-xs">{cvDocument?.fileName || "Not confirmed"}</p>
-                  </div>
-                  <div className="rounded-lg border border-outline-variant bg-surface-container p-sm">
-                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Extractor</p>
-                    <p className="font-body-sm text-body-sm text-on-surface mt-xs">{skillProfile.provider}</p>
-                  </div>
-                  <div className="rounded-lg border border-outline-variant bg-surface-container p-sm">
-                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Jobs Used</p>
-                    <p className="font-body-sm text-body-sm text-on-surface mt-xs">{jobs.length}</p>
-                  </div>
+          <section className="md:col-span-12 border border-outline-variant rounded-xl bg-surface-container p-md">
+            <div className="flex flex-col gap-md">
+              <div className="space-y-xs">
+                <div className="flex items-center gap-2">
+                  <Icon name="database" className="text-primary" />
+                  <h3 className="font-headline-md text-headline-md text-on-surface">
+                    {marketEvidenceOverview.title}
+                  </h3>
                 </div>
-                {topDemandedSkills.length > 0 && (
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  {marketEvidenceOverview.subtitle}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                {marketEvidenceOverview.stats.map((stat) => (
+                  <div key={stat.label} className="rounded-lg border border-outline-variant bg-surface-container-low p-sm">
+                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                      {stat.label}
+                    </p>
+                    <p className="font-headline-md text-headline-md text-on-surface mt-xs break-words">
+                      {stat.value}
+                    </p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+                      {stat.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-sm">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-sm">
+                  <div>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                      Top requirements from market jobs
+                    </p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+                      Ranked by how often each skill appears in the loaded job posts.
+                    </p>
+                  </div>
+                  <a className="inline-flex items-center gap-xs text-primary font-label-md text-label-md hover:underline" href="#company-matches">
+                    Review companies
+                    <Icon name="arrow_downward" className="text-[18px]" />
+                  </a>
+                </div>
+
+                {marketEvidenceOverview.topDemandedSkills.length > 0 ? (
                   <div className="mt-sm flex flex-wrap gap-xs">
-                    {topDemandedSkills.map(([skill, count]) => (
-                      <span key={skill} className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
-                        {skill}: {count}
+                    {marketEvidenceOverview.topDemandedSkills.map(({ skill, count }) => (
+                      <span key={skill} className="inline-flex items-center gap-xs bg-surface-container-high border border-outline-variant text-on-surface px-3 py-1 rounded-full font-label-sm text-label-sm">
+                        <span className="text-primary">{skill}</span>
+                        <span className="text-on-surface-variant">{count}</span>
                       </span>
                     ))}
                   </div>
+                ) : (
+                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-sm">
+                    No market requirements detected yet.
+                  </p>
                 )}
               </div>
             </div>
           </section>
 
-          <section className="md:col-span-12 bg-surface-container border border-outline-variant rounded-xl p-md">
+          <section id="company-matches" className="md:col-span-12 bg-surface-container border border-outline-variant rounded-xl p-md scroll-mt-24">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-sm mb-md">
               <div>
                 <div className="flex items-center gap-2 mb-xs">
@@ -298,20 +444,20 @@ export function AnalysisPage() {
               </div>
               {companyRequirementMatches.length > 0 && (
                 <span className="font-label-sm text-label-sm text-primary uppercase tracking-wider">
-                  Showing {companyRequirementMatches.length} of {analysis.marketEvidence.jobCount}
+                  Showing {companyRequirementMatches.length} of {allCompanyRequirementMatches.length}
                 </span>
               )}
             </div>
 
             {companyRequirementMatches.length === 0 ? (
               <p className="font-body-sm text-body-sm text-on-surface-variant">
-                No company requirement evidence is available yet. Upload a CV and load market jobs first.
+                No company requirements found yet. Try changing your target role, choosing All Malaysia, checking job API configuration, or uploading and confirming your CV again.
               </p>
             ) : (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-sm">
                   {companyRequirementMatches.map((job) => (
-                    <article key={job.id} className="bg-surface-container-low border border-outline-variant rounded-xl p-md">
+                    <article key={job.id} className="bg-surface-container-low border border-outline-variant rounded-xl p-md hover:border-primary/50 transition-colors">
                       <div className="flex items-start justify-between gap-sm mb-sm">
                         <div>
                           <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider">
@@ -334,61 +480,9 @@ export function AnalysisPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-sm">
-                        <div>
-                          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
-                            Requirements Detected
-                          </p>
-                          <div className="flex flex-wrap gap-xs">
-                            {job.requiredSkills.length > 0 ? (
-                              job.requiredSkills.map((skill) => (
-                                <span key={skill} className="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm">
-                                  {skill}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="font-body-sm text-body-sm text-on-surface-variant">No skills detected from this job text.</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
-                            Matched With CV
-                          </p>
-                          <div className="flex flex-wrap gap-xs">
-                            {job.matchedSkills.length > 0 ? (
-                              job.matchedSkills.map((skill) => (
-                                <span key={skill} className="bg-primary-container/20 border border-primary/30 text-primary px-3 py-1 rounded-full font-label-sm text-label-sm">
-                                  {skill}
-                                </span>
-                              ))
-                            ) : job.requiredSkills.length === 0 ? (
-                              <span className="font-body-sm text-body-sm text-on-surface-variant">No detected requirements to compare with your CV.</span>
-                            ) : (
-                              <span className="font-body-sm text-body-sm text-on-surface-variant">No resume overlap for this company yet.</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
-                            Still Missing
-                          </p>
-                          <div className="flex flex-wrap gap-xs">
-                            {job.requiredSkills.length === 0 ? (
-                              <span className="font-body-sm text-body-sm text-on-surface-variant">No requirements were detected from this job post, so missing skills cannot be calculated.</span>
-                            ) : job.missingSkills.length > 0 ? (
-                              job.missingSkills.map((skill) => (
-                                <span key={skill} className="border border-orange-500/50 text-orange-400 bg-orange-500/5 px-3 py-1 rounded-full font-label-sm text-label-sm">
-                                  {skill}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="font-body-sm text-body-sm text-primary">Your CV covers all detected requirements for this job.</span>
-                            )}
-                          </div>
-                        </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                        <RequirementBlock title="Matched skills" skills={job.matchedSkills} emptyText="No matched skills detected" variant="matched" />
+                        <RequirementBlock title="Missing skills" skills={job.missingSkills} emptyText="No missing skills detected" variant="missing" />
                       </div>
 
                       {job.url && (
@@ -424,5 +518,34 @@ export function AnalysisPage() {
         </div>
       </main>
     </PageShell>
+  );
+}
+
+function RequirementBlock({ title, skills, emptyText, variant = "default" }) {
+  const chipClassName = {
+    default: "bg-surface-container-highest text-on-surface-variant",
+    matched: "bg-primary-container/20 border border-primary/30 text-primary",
+    missing: "border border-orange-500/50 text-orange-400 bg-orange-500/5",
+  }[variant];
+
+  return (
+    <div className="rounded-lg bg-surface-container-lowest border border-outline-variant/60 p-sm">
+      <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
+        {title}
+      </p>
+      <div className="flex flex-wrap gap-xs">
+        {skills.length > 0 ? (
+          skills.map((skill) => (
+            <span key={skill} className={`${chipClassName} px-3 py-1 rounded-full font-label-sm text-label-sm`}>
+              {skill}
+            </span>
+          ))
+        ) : (
+          <span className={`font-body-sm text-body-sm ${variant === "missing" && emptyText.startsWith("Your CV") ? "text-primary" : "text-on-surface-variant"}`}>
+            {emptyText}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

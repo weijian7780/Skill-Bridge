@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { getRegionOption } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 
@@ -10,6 +11,7 @@ export function ProfilePage() {
   const { config, logout, session } = useAuth();
   const displayName = session?.user?.email?.split("@")[0] ?? "Alex Mercer";
   const gaps = missingSkills;
+  const regionLabel = getRegionOption(careerTarget.region).label;
 
   async function handleSignOut() {
     await logout();
@@ -66,7 +68,7 @@ export function ProfilePage() {
           <div className="flex justify-between items-center bg-surface-container-low p-sm rounded-lg">
             <div>
               <p className="font-body-md text-body-md text-on-surface">{careerTarget.role}</p>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">{careerTarget.region}</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">{regionLabel}</p>
             </div>
             <a className="text-primary hover:underline font-label-md text-label-md" href="/target">Edit</a>
           </div>

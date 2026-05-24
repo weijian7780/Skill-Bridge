@@ -1,4 +1,4 @@
-export const DEFAULT_COMPANY_MATCH_LIMIT = 6;
+export const DEFAULT_COMPANY_MATCH_LIMIT = 5;
 
 export function getVisibleCompanyMatches(
   jobMatches = [],

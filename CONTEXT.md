@@ -41,6 +41,33 @@ The checkpoint after CV extraction where the student reviews and edits extracted
 ### Data Sync
 The process of loading a Profile Snapshot after login and saving app-state changes back to Supabase.
 
+### Target Market
+The geographic job market used for company requirement comparison. SkillBridge focuses on Malaysia first, including all Malaysia and Malaysian state or federal territory options.
+
+### Company Requirement
+A skill or requirement detected from a job posting for the student's Career Target.
+
+### Company Requirement Match
+A comparison between one job posting's Company Requirements and the student's confirmed resume skills.
+
+### Relevant Job Posting
+A job posting that matches the student's Career Target role and has at least one detected Company Requirement. Provider results for unrelated roles are excluded before skill-gap calculation, even if they contain skills that appear in the student's resume.
+
+### Matched Skill
+A Company Requirement that is also found in the student's confirmed resume skills.
+
+### Missing Skill
+A Company Requirement that is not found in the student's confirmed resume skills.
+
+### Market Match Score
+The percentage of a job posting's detected Company Requirements that are Matched Skills.
+
+### Analysis
+The skill-gap view that compares the student's confirmed resume skills against individual Relevant Job Postings. Analysis shows job-specific Matched Skills and Missing Skills.
+
+### Roadmap Priority Gap
+A Missing Skill selected for future learning recommendations by combining patterns across top Company Requirement Matches.
+
 ## Approved Scope
 
 - Build a real full-stack web app, not a static Stitch export.

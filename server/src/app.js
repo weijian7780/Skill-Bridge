@@ -3,6 +3,7 @@ import express from "express";
 import { buildCorsOptions } from "./config/cors.js";
 import { cvRouter } from "./routes/cv.js";
 import { jobsRouter } from "./routes/jobs.js";
+import { roadmapRouter } from "./routes/roadmap.js";
 
 export function createApp() {
   const app = express();
@@ -18,6 +19,7 @@ export function createApp() {
       routes: {
         cv: "/api/cv",
         jobs: "/api/jobs/search",
+        roadmap: "/api/roadmap/generate",
       },
     });
   });
@@ -28,6 +30,7 @@ export function createApp() {
 
   app.use("/api/cv", cvRouter);
   app.use("/api/jobs", jobsRouter);
+  app.use("/api/roadmap", roadmapRouter);
 
   app.use((error, _request, response, _next) => {
     console.error(error);

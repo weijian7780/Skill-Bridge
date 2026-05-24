@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { buildRoadmap } from "../services/analysis/roadmapEngine.js";
 import { buildSkillGapAnalysis } from "../services/analysis/skillGapEngine.js";
+import { normaliseRegionId } from "../services/career/regionOptions.js";
 import {
   buildStudentProfileSnapshot,
   loadStudentProfileSnapshot,
@@ -13,7 +13,7 @@ const AppStateContext = createContext(null);
 const initialTarget = {
   role: "Data Analyst",
   industry: "Data / IT",
-  region: "Sabah, Malaysia",
+  region: "all-malaysia",
   companyTypes: ["MNC", "Startup", "GLC"],
 };
 
@@ -32,7 +32,7 @@ function toCareerTarget(snapshot) {
   return {
     role: target.role ?? initialTarget.role,
     industry: target.industry ?? initialTarget.industry,
-    region: target.region ?? initialTarget.region,
+    region: normaliseRegionId(target.region ?? initialTarget.region),
     companyTypes: target.company_types ?? target.companyTypes ?? initialTarget.companyTypes,
   };
 }
@@ -72,6 +72,7 @@ export function AppStateProvider({ children }) {
   const [cvDocument, setCvDocument] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [jobStatus, setJobStatus] = useState("Job API key not configured");
+  const [roadmapPlan, setRoadmapPlan] = useState(null);
   const [syncStatus, setSyncStatus] = useState("Sign in to sync profile data.");
   const [loadedProfileFor, setLoadedProfileFor] = useState("");
 
@@ -82,7 +83,10 @@ export function AppStateProvider({ children }) {
 
   const missingSkills = analysis.missingSkills;
 
-  const roadmap = useMemo(() => buildRoadmap(missingSkills), [missingSkills]);
+  const roadmap = useMemo(
+    () => roadmapPlan?.items ?? [],
+    [roadmapPlan],
+  );
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -185,6 +189,8 @@ export function AppStateProvider({ children }) {
     analysis,
     missingSkills,
     roadmap,
+    roadmapPlan,
+    setRoadmapPlan,
     syncStatus,
   };
 
