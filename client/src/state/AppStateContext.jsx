@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { buildSkillGapAnalysis } from "../services/analysis/skillGapEngine.js";
 import { normaliseIndustryId } from "../services/career/industryOptions.js";
 import { normaliseRegionId } from "../services/career/regionOptions.js";
@@ -7,6 +7,7 @@ import {
   loadStudentProfileSnapshot,
   saveStudentProfileSnapshot,
 } from "../services/supabase/studentProfileRepository.js";
+import { resolveProfileSaveIntent } from "../services/supabase/profileSnapshotSync.js";
 import { useAuth } from "./AuthContext.jsx";
 
 const AppStateContext = createContext(null);
@@ -88,6 +89,7 @@ export function AppStateProvider({ children }) {
   const [roadmapPlan, setRoadmapPlan] = useState(null);
   const [syncStatus, setSyncStatus] = useState("Sign in to sync profile data.");
   const [loadedProfileFor, setLoadedProfileFor] = useState("");
+  const skipProfileSaveFor = useRef("");
 
   const analysis = useMemo(
     () => buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, jobs }),
@@ -105,6 +107,7 @@ export function AppStateProvider({ children }) {
     const userId = session?.user?.id;
     if (!userId || !supabaseConnection.configured) {
       setLoadedProfileFor("");
+      skipProfileSaveFor.current = "";
       setSyncStatus(userId ? "Supabase is not configured." : "Sign in to sync profile data.");
       return;
     }
@@ -127,12 +130,15 @@ export function AppStateProvider({ children }) {
         setSkillProfile(toSkillProfile(result.snapshot));
         setCvDocument(toCvDocument(result.snapshot));
         setSyncStatus("Supabase profile loaded.");
+        skipProfileSaveFor.current = userId;
         setLoadedProfileFor(userId);
       } else if (result.ok) {
         setSyncStatus("No Supabase profile yet. New profile will be saved after changes.");
+        skipProfileSaveFor.current = userId;
         setLoadedProfileFor(userId);
       } else {
         setLoadedProfileFor("");
+        skipProfileSaveFor.current = "";
         setSyncStatus(result.reason);
         if (result.authExpired) {
           expireSession(result.reason);
@@ -149,7 +155,15 @@ export function AppStateProvider({ children }) {
 
   useEffect(() => {
     const userId = session?.user?.id;
-    if (!userId || !supabaseConnection.configured || loadedProfileFor !== userId) {
+    const saveIntent = resolveProfileSaveIntent({
+      userId,
+      supabaseConfigured: supabaseConnection.configured,
+      loadedProfileFor,
+      skipProfileSaveFor: skipProfileSaveFor.current,
+    });
+    skipProfileSaveFor.current = saveIntent.nextSkipProfileSaveFor;
+
+    if (!saveIntent.shouldSave) {
       return;
     }
 
