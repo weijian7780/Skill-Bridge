@@ -1,5 +1,7 @@
 import { getRegionAnalysisCopy, getRegionOption } from "../career/regionOptions.js";
 
+export const DEFAULT_SKILL_EVIDENCE_LIMIT = 5;
+
 export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
   const topMatchCount = Math.min(analysis?.marketEvidence?.jobMatches?.length ?? 0, 5);
   const role = careerTarget?.role || "target role";
@@ -222,4 +224,22 @@ export function buildSkillEvidenceRows({
         companies: [...new Set(companies)].slice(0, 3),
       };
     });
+}
+
+export function getVisibleSkillEvidenceRows(
+  rows = [],
+  { showAll = false, limit = DEFAULT_SKILL_EVIDENCE_LIMIT } = {},
+) {
+  return showAll ? rows : rows.slice(0, limit);
+}
+
+export function shouldShowSkillEvidenceToggle(
+  rows = [],
+  limit = DEFAULT_SKILL_EVIDENCE_LIMIT,
+) {
+  return rows.length > limit;
+}
+
+export function getSkillEvidenceToggleLabel(showAll) {
+  return showAll ? "Show less" : "Show more";
 }

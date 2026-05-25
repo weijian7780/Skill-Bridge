@@ -6,6 +6,9 @@ import { buildAnalysisActionLabel } from "../services/analysis/analysisStatusCop
 import {
   buildDiagnosticScoreDisplay,
   buildSkillEvidenceRows,
+  getSkillEvidenceToggleLabel,
+  getVisibleSkillEvidenceRows,
+  shouldShowSkillEvidenceToggle,
 } from "../services/analysis/analysisDiagnosticDisplay.js";
 import {
   buildMarketJobTargetKey,
@@ -40,6 +43,7 @@ export function AnalysisPage() {
   const navigate = useNavigate();
   const [jobSearchAttempt, setJobSearchAttempt] = useState(0);
   const [showAllCompanyMatches, setShowAllCompanyMatches] = useState(false);
+  const [showAllMissingSkills, setShowAllMissingSkills] = useState(false);
   const [roadmapGenerationStatus, setRoadmapGenerationStatus] = useState("");
   const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
   const lastJobSearchKey = useRef("");
@@ -81,6 +85,14 @@ export function AnalysisPage() {
         evidenceKey: "missingSkills",
       }),
     [analysis.marketEvidence.jobMatches, analysis.marketEvidence.skillDemand, missingSkills],
+  );
+  const visibleMissingSkillRows = useMemo(
+    () => getVisibleSkillEvidenceRows(missingSkillRows, { showAll: showAllMissingSkills }),
+    [missingSkillRows, showAllMissingSkills],
+  );
+  const showMissingSkillToggle = useMemo(
+    () => shouldShowSkillEvidenceToggle(missingSkillRows),
+    [missingSkillRows],
   );
   const marketEvidenceOverview = useMemo(
     () =>
@@ -382,7 +394,7 @@ export function AnalysisPage() {
               <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Priority Gaps by Market Frequency</h3>
             </div>
             <div className="space-y-sm">
-              {missingSkillRows.map((row, index) => (
+              {visibleMissingSkillRows.map((row, index) => (
                 <div key={row.skill} className={`${index === 0 ? "border-orange-500/50 bg-orange-500/5" : "border-outline-variant bg-surface-container-low"} rounded-lg border p-sm`}>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-xs">
                     <div className={index === 0 ? "text-orange-400" : "text-on-surface"}>
@@ -412,6 +424,18 @@ export function AnalysisPage() {
                         ? "Market job skills are required before gaps can be calculated."
                         : "Confirm a latest CV to calculate gaps."}
                   </p>
+                </div>
+              )}
+              {showMissingSkillToggle && (
+                <div className="flex justify-center pt-xs">
+                  <button
+                    className="inline-flex items-center gap-xs border border-primary text-primary px-6 py-3 rounded-xl font-label-md text-label-md hover:bg-primary/10 active:scale-95 transition-all"
+                    onClick={() => setShowAllMissingSkills((current) => !current)}
+                    type="button"
+                  >
+                    {getSkillEvidenceToggleLabel(showAllMissingSkills)}
+                    <Icon name={showAllMissingSkills ? "expand_less" : "expand_more"} />
+                  </button>
                 </div>
               )}
             </div>

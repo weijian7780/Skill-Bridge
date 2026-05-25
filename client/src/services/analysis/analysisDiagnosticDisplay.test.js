@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import {
   buildDiagnosticScoreDisplay,
   buildSkillEvidenceRows,
+  getSkillEvidenceToggleLabel,
+  getVisibleSkillEvidenceRows,
+  shouldShowSkillEvidenceToggle,
 } from "./analysisDiagnosticDisplay.js";
 
 test("shows pending instead of 0 percent when analysis inputs are incomplete", () => {
@@ -202,4 +205,20 @@ test("builds diagnostic skill evidence rows ranked by market demand", () => {
   assert.equal(rows[0].countLabel, "8 jobs");
   assert.deepEqual(rows[0].companies, ["TWO95", "ResMed", "Zeal"]);
   assert.equal(rows[2].countLabel, "2 jobs");
+});
+
+test("limits priority skill evidence rows until the user expands them", () => {
+  const rows = Array.from({ length: 7 }, (_, index) => ({
+    skill: `Skill ${index + 1}`,
+  }));
+
+  assert.deepEqual(
+    getVisibleSkillEvidenceRows(rows).map((row) => row.skill),
+    ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"],
+  );
+  assert.equal(getVisibleSkillEvidenceRows(rows, { showAll: true }).length, 7);
+  assert.equal(shouldShowSkillEvidenceToggle(rows), true);
+  assert.equal(shouldShowSkillEvidenceToggle(rows.slice(0, 5)), false);
+  assert.equal(getSkillEvidenceToggleLabel(false), "Show more");
+  assert.equal(getSkillEvidenceToggleLabel(true), "Show less");
 });
