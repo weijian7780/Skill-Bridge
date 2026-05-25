@@ -90,6 +90,8 @@ function buildMarketEvidence(jobs = [], cvSkills = [], careerTarget = {}) {
       location: job.location || "Malaysia",
       url: job.url || "",
       source: job.source || "",
+      ...(job.salary ? { salary: job.salary } : {}),
+      ...(job.jobType ? { jobType: job.jobType } : {}),
       requiredSkills,
       matchedSkills,
       missingSkills,
@@ -183,6 +185,10 @@ function isRelevantLocation(job, careerTarget = {}) {
     return false;
   }
 
+  if (isMalaysiaWideLocation(location)) {
+    return true;
+  }
+
   if (region.id === "remote-malaysia") {
     return containsAny(location, ["remote", "hybrid"]);
   }
@@ -192,6 +198,10 @@ function isRelevantLocation(job, careerTarget = {}) {
     region.searchValue,
     region.searchValue.replace(/,\s*Malaysia/i, ""),
   ]);
+}
+
+function isMalaysiaWideLocation(location) {
+  return location === "malaysia";
 }
 
 function isUiUxRole(role) {

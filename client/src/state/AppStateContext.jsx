@@ -223,7 +223,7 @@ export function AppStateProvider({ children }) {
     setJobs([]);
     setLoadedJobTargetKey("");
     setRoadmapPlan(null);
-    setJobStatus("Career target changed. Open Analysis to load matching market jobs.");
+    setJobStatus("Career target changed. Confirm a latest CV or analyze jobs to load matching market jobs.");
   }
 
   const value = {

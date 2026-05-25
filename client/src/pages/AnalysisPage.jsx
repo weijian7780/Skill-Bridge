@@ -265,7 +265,7 @@ export function AnalysisPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-          <section className="md:col-span-4 bg-surface-container border border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center">
+          <section className="md:col-span-4 bg-surface-container border border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center shadow-sm">
             <h3 className="font-label-md text-label-md text-on-surface-variant mb-6 uppercase tracking-wider">{scoreDisplay.label}</h3>
             <div className="radial-progress relative mb-4" style={{ "--value": scoreDisplay.isCalculated ? analysis.readinessScore : 0 }}>
               <span className={`${scoreDisplay.isCalculated ? "font-headline-xl text-headline-xl" : "font-headline-md text-headline-md"} text-primary`}>
@@ -277,7 +277,7 @@ export function AnalysisPage() {
             </p>
           </section>
 
-          <section className="md:col-span-8 bg-surface-container border border-outline-variant rounded-xl p-md flex flex-col justify-between">
+          <section className="md:col-span-8 bg-surface-container border border-outline-variant rounded-xl p-md flex flex-col justify-between shadow-sm">
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Icon name="query_stats" className="text-primary" />
@@ -310,7 +310,7 @@ export function AnalysisPage() {
             <div className="mt-8 flex flex-col sm:flex-row justify-end gap-sm">
               {analysis.status === "needs_market" ? (
                 <button
-                  className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-primary"
+                  className="bg-primary hover:bg-secondary text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-primary"
                   disabled={!hasConfirmedCv}
                   onClick={retryJobSearch}
                 >
@@ -329,7 +329,7 @@ export function AnalysisPage() {
                     {refreshActionLabel}
                   </button>
                   <button
-                    className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center justify-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
+                    className="bg-primary hover:bg-secondary text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center justify-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={isGeneratingRoadmap}
                     onClick={generateRoadmap}
                     type="button"
@@ -343,7 +343,7 @@ export function AnalysisPage() {
                   </button>
                 </>
               ) : (
-                <Link className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 group" to={isReady ? "/roadmap" : "/cv"}>
+                <Link className="bg-primary hover:bg-secondary text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 group" to={isReady ? "/roadmap" : "/cv"}>
                   {actionLabel}
                   <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -356,7 +356,7 @@ export function AnalysisPage() {
             )}
           </section>
 
-          <section className="md:col-span-6 bg-surface-container border border-outline-variant rounded-xl p-md">
+          <section className="md:col-span-6 bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm">
             <div className="flex items-center gap-2 mb-6">
               <Icon name="check_circle" className="text-primary" />
               <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Matched Skills with Evidence</h3>
@@ -407,7 +407,7 @@ export function AnalysisPage() {
             </div>
           </section>
 
-          <section className="md:col-span-6 bg-surface-container border border-outline-variant rounded-xl p-md">
+          <section className="md:col-span-6 bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm">
             <div className="flex items-center gap-2 mb-6">
               <Icon name="flag" className="text-secondary" />
               <h3 className="font-label-md text-label-md text-on-surface uppercase tracking-wider">Priority Gaps by Market Frequency</h3>
@@ -460,7 +460,7 @@ export function AnalysisPage() {
             </div>
           </section>
 
-          <section className="md:col-span-12 border border-outline-variant rounded-xl bg-surface-container p-md">
+          <section className="md:col-span-12 border border-outline-variant rounded-xl bg-surface-container p-md shadow-sm">
             <div className="flex flex-col gap-md">
               <div className="space-y-xs">
                 <div className="flex items-center gap-2">
@@ -526,7 +526,7 @@ export function AnalysisPage() {
             </div>
           </section>
 
-          <section id="company-matches" className="md:col-span-12 bg-surface-container border border-outline-variant rounded-xl p-md scroll-mt-24">
+          <section id="company-matches" className="md:col-span-12 bg-surface-container border border-outline-variant rounded-xl p-md scroll-mt-24 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-sm mb-md">
               <div>
                 <div className="flex items-center gap-2 mb-xs">
@@ -554,7 +554,7 @@ export function AnalysisPage() {
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-sm">
                   {companyRequirementMatches.map((job) => (
-                    <article key={job.id} className="bg-surface-container-low border border-outline-variant rounded-xl p-md hover:border-primary/50 transition-colors">
+                    <article key={job.id} className="bg-surface-container border border-outline-variant rounded-xl p-md hover:border-primary/50 hover:shadow-md transition-all">
                       <div className="flex items-start justify-between gap-sm mb-sm">
                         <div>
                           <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider">
@@ -566,6 +566,18 @@ export function AnalysisPage() {
                           <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
                             {[job.location, job.source].filter(Boolean).join(" | ")}
                           </p>
+                          <div className="mt-xs flex flex-wrap gap-xs">
+                            <span className="inline-flex items-center gap-xs rounded-full bg-surface-container-high border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface">
+                              <Icon name="payments" className="text-[16px] text-primary" />
+                              {job.salary || "Salary not stated"}
+                            </span>
+                            {job.jobType && (
+                              <span className="inline-flex items-center gap-xs rounded-full bg-surface-container-high border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface">
+                                <Icon name="work" className="text-[16px] text-primary" />
+                                {job.jobType}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="min-w-16 text-center rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
                           <span className="block font-headline-md text-headline-md text-primary">
@@ -581,6 +593,21 @@ export function AnalysisPage() {
                         <RequirementBlock title="Matched skills" skills={job.matchedSkills} emptyText="No matched skills detected" variant="matched" />
                         <RequirementBlock title="Missing skills" skills={job.missingSkills} emptyText="No missing skills detected" variant="missing" />
                       </div>
+
+                      {job.requiredSkills.length > 0 && (
+                        <div className="mt-sm flex flex-wrap gap-xs">
+                          {job.requiredSkills.slice(0, 5).map((skill) => (
+                            <span key={skill} className="rounded-full bg-primary-container text-primary px-3 py-1 font-label-sm text-label-sm">
+                              {skill}
+                            </span>
+                          ))}
+                          {job.requiredSkills.length > 5 && (
+                            <span className="rounded-full bg-surface-container-high text-on-surface-variant px-3 py-1 font-label-sm text-label-sm">
+                              +{job.requiredSkills.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {job.url && (
                         <a

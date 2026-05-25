@@ -2,8 +2,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: max(884px, 100dvh);
-  background: #051424;
-  color: #d4e4fa;
+  background: #f4f7fb;
+  color: #172033;
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -40,7 +40,7 @@ a {
 }
 
 .upload-dashed {
-  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='8' ry='8' stroke='%233C4A46FF' stroke-width='2' stroke-dasharray='8%2c 8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='8' ry='8' stroke='%238DA2C0FF' stroke-width='2' stroke-dasharray='8%2c 8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
 }
 
 .radial-progress {
@@ -51,10 +51,69 @@ a {
   height: 12rem;
   border-radius: 9999px;
   background:
-    radial-gradient(closest-side, #051424 80%, transparent 0 100%),
-    conic-gradient(#57f1db calc(var(--value) * 1%), #1c2b3c 0);
+    radial-gradient(closest-side, #ffffff 80%, transparent 0 100%),
+    conic-gradient(#0b63ce calc(var(--value) * 1%), #d7e2f0 0);
 }
 
 .timeline-line {
-  background: linear-gradient(to bottom, #2dd4bf 25%, #3f465c 25%);
+  background: linear-gradient(to bottom, #0b63ce 25%, #d7e2f0 25%);
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d7e2f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 28px rgb(23 32 51 / 8%);
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid #d7e2f0;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+}
+
+.skill-chip-neutral {
+  background: #edf3fb;
+  color: #5b6475;
+}
+
+.skill-chip-positive {
+  background: #dff7ea;
+  color: #17613d;
+  border-color: #b8e6d4;
+}
+
+.skill-chip-warning {
+  background: #fff1e7;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.step-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #5b6475;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.progress-track {
+  margin-top: 0.75rem;
+  height: 0.25rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #d7e2f0;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #0b63ce;
 }

@@ -169,6 +169,38 @@ test("keeps per-company job requirement matches as market evidence", () => {
   assert.deepEqual(analysis.marketEvidence.jobMatches[1].missingSkills, ["Reporting", "Data Warehouse"]);
 });
 
+test("keeps job listing metadata for company requirement cards", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "Malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["SQL"],
+    },
+    jobs: [
+      {
+        id: "job-with-meta",
+        title: "Data Analyst",
+        company: "Blue Hiring Sdn Bhd",
+        location: "Kuala Lumpur",
+        salary: "RM 4,000 - RM 6,000",
+        jobType: "Full-time",
+        source: "Jooble",
+        extractedSkills: ["SQL", "Power BI"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.marketEvidence.jobMatches[0].salary, "RM 4,000 - RM 6,000");
+  assert.equal(analysis.marketEvidence.jobMatches[0].jobType, "Full-time");
+  assert.equal(analysis.marketEvidence.jobMatches[0].source, "Jooble");
+});
+
 test("does not score a company match when no job requirements are detected", () => {
   const analysis = buildSkillGapAnalysis({
     careerTarget: {
@@ -647,4 +679,73 @@ test("excludes stale company matches outside the selected target region", () => 
     ["KL Analytics"],
   );
   assert.deepEqual(analysis.missingSkills, ["Tableau"]);
+});
+
+test("keeps Malaysia-wide provider jobs for state targets when the provider has country-level location precision", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "penang",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["SQL"],
+    },
+    jobs: [
+      {
+        id: "provider-country-level-result",
+        title: "Data Analyst",
+        company: "Malaysia-wide Analytics",
+        location: "Malaysia",
+        extractedSkills: ["SQL", "Power BI"],
+      },
+      {
+        id: "explicit-other-state-result",
+        title: "Data Analyst",
+        company: "KL Analytics",
+        location: "Kuala Lumpur, Malaysia",
+        extractedSkills: ["SQL", "Tableau"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.marketEvidence.excludedJobCount, 1);
+  assert.deepEqual(
+    analysis.marketEvidence.jobMatches.map((job) => job.company),
+    ["Malaysia-wide Analytics"],
+  );
+  assert.deepEqual(analysis.missingSkills, ["Power BI"]);
+});
+
+test("keeps Malaysia-wide provider jobs for remote targets when remote precision is unavailable", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "remote-malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["SQL"],
+    },
+    jobs: [
+      {
+        id: "provider-country-level-result",
+        title: "Data Analyst",
+        company: "Malaysia-wide Analytics",
+        location: "Malaysia",
+        extractedSkills: ["SQL", "Power BI"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.marketEvidence.jobCount, 1);
+  assert.equal(analysis.marketEvidence.jobMatches[0].company, "Malaysia-wide Analytics");
 });

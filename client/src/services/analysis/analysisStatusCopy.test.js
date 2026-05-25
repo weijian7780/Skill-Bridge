@@ -57,7 +57,7 @@ test("uses a command label before the first market job search", () => {
   assert.equal(
     buildAnalysisActionLabel({
       analysisStatus: "needs_market",
-      jobStatus: "Career target changed. Open Analysis to load matching market jobs.",
+      jobStatus: "Career target changed. Confirm a latest CV or analyze jobs to load matching market jobs.",
     }),
     "Load Jobs",
   );

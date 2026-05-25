@@ -1,9 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
-import { CvUploadPage } from "./pages/CvUploadPage.jsx";
-import { CareerTargetPage } from "./pages/CareerTargetPage.jsx";
-import { AnalysisPage } from "./pages/AnalysisPage.jsx";
 import { RoadmapPage } from "./pages/RoadmapPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { useAuth } from "./state/AuthContext.jsx";
@@ -31,9 +28,9 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />
-      <Route path="/cv" element={<RequireAuth><CvUploadPage /></RequireAuth>} />
-      <Route path="/target" element={<RequireAuth><CareerTargetPage /></RequireAuth>} />
-      <Route path="/analysis" element={<RequireAuth><AnalysisPage /></RequireAuth>} />
+      <Route path="/cv" element={<RequireAuth><Navigate to="/home" replace /></RequireAuth>} />
+      <Route path="/target" element={<RequireAuth><Navigate to="/home" replace /></RequireAuth>} />
+      <Route path="/analysis" element={<RequireAuth><Navigate to="/home" replace /></RequireAuth>} />
       <Route path="/roadmap" element={<RequireAuth><RoadmapPage /></RequireAuth>} />
       <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />

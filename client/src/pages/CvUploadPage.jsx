@@ -166,7 +166,7 @@ export function CvUploadPage() {
               onDrop={handleDrop}
             >
               <input accept={SUPPORTED_CV_ACCEPT} className="hidden" type="file" onChange={(event) => handleFile(event.target.files?.[0])} />
-              <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-md group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+              <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-md group-hover:bg-primary-container group-hover:text-primary transition-colors">
                 <Icon name="upload_file" className="text-[32px]" />
               </div>
               <p className="font-headline-md text-headline-md mb-xs">Click or drag to upload</p>

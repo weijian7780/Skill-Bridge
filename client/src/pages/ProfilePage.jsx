@@ -45,7 +45,7 @@ export function ProfilePage() {
             <div>
               <div className="flex items-end gap-xs">
                 <span className="font-headline-xl-mobile text-headline-xl-mobile text-primary">{analysis.readinessScore}%</span>
-                <span className="font-label-md text-label-md text-primary-container pb-1">{readinessLabel}</span>
+                <span className="font-label-md text-label-md text-primary pb-1">{readinessLabel}</span>
               </div>
               <div className="w-full bg-surface-variant h-1.5 rounded-full mt-sm overflow-hidden">
                 <div className="bg-primary h-full" style={{ width: `${analysis.readinessScore}%` }} />

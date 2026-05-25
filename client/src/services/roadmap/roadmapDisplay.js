@@ -165,7 +165,7 @@ function buildEmptyStateMessage(status) {
     return "Load market job evidence before generating a roadmap from company requirements.";
   }
 
-  return "Open the analysis page and build a roadmap from the detected missing skills.";
+  return "Open the workspace and build a roadmap from the detected missing skills.";
 }
 
 function sourceLabel(source) {

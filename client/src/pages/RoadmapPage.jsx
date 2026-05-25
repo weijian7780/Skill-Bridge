@@ -47,9 +47,9 @@ export function RoadmapPage() {
               </div>
               <Link
                 className="inline-flex items-center justify-center gap-xs rounded-xl bg-primary px-lg py-sm font-label-md text-label-md text-on-primary active:scale-[0.98]"
-                to="/analysis"
+                to="/home"
               >
-                Open Analysis
+                Open Workspace
                 <Icon name="arrow_forward" />
               </Link>
             </div>
