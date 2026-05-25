@@ -325,7 +325,7 @@ test("uses Jooble first by default and normalizes job skills", async () => {
   }
 });
 
-test("adds selected industry context to Jooble keywords", async () => {
+test("keeps Jooble keywords role-first when industry is selected", async () => {
   const restore = withEnv({
     GEMINI_API_KEY: undefined,
     JOB_PROVIDER: undefined,
@@ -358,7 +358,39 @@ test("adds selected industry context to Jooble keywords", async () => {
     });
 
     const requestBody = JSON.parse(calls[0].options.body);
-    assert.equal(requestBody.keywords, "Data Analyst finance banking accounting fintech financial");
+    assert.equal(requestBody.keywords, "Data Analyst");
+    assert.equal(requestBody.location, "Malaysia");
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
+test("uses selected industry keywords only when the target role is empty", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: undefined,
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+  });
+  const calls = [];
+  const restoreFetch = withFetch(async (url, options) => {
+    calls.push({ url: String(url), options });
+
+    return jsonResponse({
+      totalCount: 0,
+      jobs: [],
+    });
+  });
+
+  try {
+    await searchMarketJobs({
+      role: "",
+      industry: "data-it",
+      location: "Malaysia",
+    });
+
+    const requestBody = JSON.parse(calls[0].options.body);
+    assert.equal(requestBody.keywords, "data analytics software cloud database IT");
     assert.equal(requestBody.location, "Malaysia");
   } finally {
     restoreFetch();

@@ -16,6 +16,17 @@ test("builds a stable cache key from provider, role, and location", () => {
   );
 });
 
+test("defaults direct cache keys to current Jooble requirement version", () => {
+  assert.equal(
+    buildJobCacheKey({
+      industry: "data-it",
+      role: "Security",
+      location: "Malaysia",
+    }),
+    "jooble|job-requirements-v2|data-it|security|malaysia",
+  );
+});
+
 test("defaults Supabase job cache keys to Jooble when no provider override is configured", async () => {
   const calls = [];
   const cache = createSupabaseJobCache({
@@ -36,8 +47,8 @@ test("defaults Supabase job cache keys to Jooble when no provider override is co
   });
 
   assert.equal(result.hit, false);
-  assert.equal(result.cacheKey, "jooble|job-requirements-v1|data-it|azure devops engineer|malaysia");
-  assert.match(calls[0].url, /cache_key=eq\.jooble%7Cjob-requirements-v1%7Cdata-it%7Cazure\+devops\+engineer%7Cmalaysia/);
+  assert.equal(result.cacheKey, "jooble|job-requirements-v2|data-it|azure devops engineer|malaysia");
+  assert.match(calls[0].url, /cache_key=eq\.jooble%7Cjob-requirements-v2%7Cdata-it%7Cazure\+devops\+engineer%7Cmalaysia/);
 });
 
 test("loads a valid cached Supabase job search result", async () => {
@@ -53,7 +64,7 @@ test("loads a valid cached Supabase job search result", async () => {
       calls.push({ url: String(url), options });
       return jsonResponse([
         {
-            cache_key: "auto|job-requirements-v1|data-it|data analyst|sabah, malaysia",
+          cache_key: "auto|job-requirements-v2|data-it|data analyst|sabah, malaysia",
           expires_at: "2026-05-22T16:00:00.000Z",
           payload: {
             configured: true,
@@ -72,11 +83,11 @@ test("loads a valid cached Supabase job search result", async () => {
   });
 
   assert.equal(result.hit, true);
-  assert.equal(result.cacheKey, "auto|job-requirements-v1|data-it|data analyst|sabah, malaysia");
+  assert.equal(result.cacheKey, "auto|job-requirements-v2|data-it|data analyst|sabah, malaysia");
   assert.equal(result.expiresAt, "2026-05-22T16:00:00.000Z");
   assert.equal(result.result.jobs[0].id, "cached-job");
   assert.match(calls[0].url, /job_search_cache/);
-  assert.match(calls[0].url, /cache_key=eq\.auto%7Cjob-requirements-v1%7Cdata-it%7Cdata\+analyst%7Csabah%2C\+malaysia/);
+  assert.match(calls[0].url, /cache_key=eq\.auto%7Cjob-requirements-v2%7Cdata-it%7Cdata\+analyst%7Csabah%2C\+malaysia/);
   assert.equal(calls[0].options.headers.apikey, "service-role-key");
   assert.equal(calls[0].options.headers.Authorization, "Bearer service-role-key");
 });
@@ -95,7 +106,7 @@ test("stores job search results in Supabase with an expiry", async () => {
       calls.push({ url: String(url), options });
       return jsonResponse([
         {
-          cache_key: "jooble|job-requirements-v1|finance|data analyst|malaysia",
+          cache_key: "jooble|job-requirements-v2|finance|data analyst|malaysia",
           expires_at: "2026-05-22T10:30:00.000Z",
         },
       ]);
@@ -118,11 +129,11 @@ test("stores job search results in Supabase with an expiry", async () => {
 
   const body = JSON.parse(calls[0].options.body);
   assert.equal(result.ok, true);
-  assert.equal(result.cacheKey, "jooble|job-requirements-v1|finance|data analyst|malaysia");
+  assert.equal(result.cacheKey, "jooble|job-requirements-v2|finance|data analyst|malaysia");
   assert.equal(result.expiresAt, "2026-05-22T10:30:00.000Z");
   assert.equal(calls[0].options.method, "POST");
   assert.equal(calls[0].options.headers.Prefer, "resolution=merge-duplicates,return=representation");
-  assert.equal(body.cache_key, "jooble|job-requirements-v1|finance|data analyst|malaysia");
+  assert.equal(body.cache_key, "jooble|job-requirements-v2|finance|data analyst|malaysia");
   assert.equal(body.provider, "jooble");
   assert.equal(body.role, "Data Analyst");
   assert.equal(body.location, "Malaysia");

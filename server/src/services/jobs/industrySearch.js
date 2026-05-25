@@ -23,12 +23,16 @@ const industryProfiles = [
 
 export function buildIndustryAwareKeywords({ role = "", industry = "" }) {
   const baseRole = String(role || "").trim();
+  if (baseRole) {
+    return baseRole;
+  }
+
   const profile = getIndustryProfile(industry);
   if (!profile) {
     return baseRole;
   }
 
-  return unique([baseRole, ...profile.keywords])
+  return unique(profile.keywords)
     .filter(Boolean)
     .join(" ");
 }
