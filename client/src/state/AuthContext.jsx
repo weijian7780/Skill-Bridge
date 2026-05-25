@@ -165,6 +165,12 @@ export function AuthProvider({ children }) {
     }));
   }, [config]);
 
+  const expireSession = useCallback((reason = "Session expired") => {
+    clearStoredSession(storage);
+    setSession(null);
+    setAuthStatus(reason);
+  }, [storage]);
+
   const logout = useCallback(async () => {
     if (config.configured && session?.accessToken) {
       await signOut({ config, accessToken: session.accessToken });
@@ -178,6 +184,7 @@ export function AuthProvider({ children }) {
   const value = {
     authStatus,
     config,
+    expireSession,
     isAuthenticated: Boolean(session?.accessToken),
     isLoading,
     login,

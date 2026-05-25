@@ -31,13 +31,43 @@ function tableUrl(baseUrl, table, searchParams = {}) {
   return url.toString();
 }
 
+async function readResponseBody(response) {
+  if (response.status === 204) {
+    return null;
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function responseError(body, status) {
+  const payload = body && typeof body === "object" && !Array.isArray(body)
+    ? body
+    : {};
+  const message = payload.message
+    ?? payload.msg
+    ?? payload.error_description
+    ?? (typeof body === "string" ? body : "")
+    ?? "";
+
+  return {
+    ...payload,
+    status,
+    isAuthError: status === 401,
+    message: message || `Supabase request failed with ${status}`,
+  };
+}
+
 async function parseResponse(response) {
-  const body = response.status === 204 ? null : await response.json();
+  const body = await readResponseBody(response);
 
   if (!response.ok) {
     return {
       data: null,
-      error: body ?? { message: `Supabase request failed with ${response.status}` },
+      error: responseError(body, response.status),
     };
   }
 

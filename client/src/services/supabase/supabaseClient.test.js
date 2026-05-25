@@ -79,3 +79,30 @@ test("uses an access token for authenticated Supabase REST requests", async () =
   assert.equal(calls[0].options.headers.Authorization, "Bearer user-jwt");
   assert.equal(calls[0].url, "https://skillbridge.supabase.co/rest/v1/student_profile_snapshots?user_id=eq.user-123");
 });
+
+test("marks rejected Supabase REST requests as auth errors", async () => {
+  const result = createSupabaseConnection({
+    env: {
+      VITE_SUPABASE_URL: "https://skillbridge.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+    },
+    accessToken: "expired-jwt",
+    fetchImpl: async () => ({
+      ok: false,
+      status: 401,
+      async json() {
+        return { message: "JWT expired" };
+      },
+    }),
+  });
+
+  const response = await result.client.upsert(
+    "student_profile_snapshots",
+    { user_id: "user-123" },
+    { onConflict: "user_id" },
+  );
+
+  assert.equal(response.error.status, 401);
+  assert.equal(response.error.isAuthError, true);
+  assert.equal(response.error.message, "JWT expired");
+});

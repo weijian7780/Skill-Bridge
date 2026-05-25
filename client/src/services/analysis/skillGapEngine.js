@@ -1,3 +1,6 @@
+import { getRegionOption } from "../career/regionOptions.js";
+import { jobMatchesIndustry } from "../career/industryOptions.js";
+
 export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, jobs = [] }) {
   const cvSkills = normaliseSkills([
     ...(skillProfile?.technicalSkills ?? []),
@@ -55,9 +58,10 @@ function buildMarketEvidence(jobs = [], cvSkills = [], careerTarget = {}) {
   const skillDemand = {};
   const jobMatches = [];
   let excludedJobCount = 0;
+  let partialJobCount = 0;
 
   for (const [index, job] of jobs.entries()) {
-    const requiredSkills = normaliseSkills(job.extractedSkills);
+    const requiredSkills = normaliseSkills(getScoredJobRequirementSkills(job));
     if (requiredSkills.length === 0) {
       continue;
     }
@@ -69,6 +73,11 @@ function buildMarketEvidence(jobs = [], cvSkills = [], careerTarget = {}) {
 
     for (const skill of requiredSkills) {
       skillDemand[skill] = (skillDemand[skill] || 0) + 1;
+    }
+
+    const partialRequirements = Boolean(job.requirements?.partialRequirements);
+    if (partialRequirements) {
+      partialJobCount += 1;
     }
 
     const matchedSkills = requiredSkills.filter((skill) => hasSkill(cvSkills, skill));
@@ -85,6 +94,7 @@ function buildMarketEvidence(jobs = [], cvSkills = [], careerTarget = {}) {
       matchedSkills,
       missingSkills,
       matchScore: Math.round((matchedSkills.length / requiredSkills.length) * 100),
+      ...(partialRequirements ? { partialRequirements: true, matchLabel: "partial match" } : {}),
     });
   }
 
@@ -92,18 +102,36 @@ function buildMarketEvidence(jobs = [], cvSkills = [], careerTarget = {}) {
     rawJobCount: jobs.length,
     jobCount: jobMatches.length,
     excludedJobCount,
+    partialJobCount,
     skillDemand,
     jobMatches: sortJobMatches(jobMatches),
   };
 }
 
+function getScoredJobRequirementSkills(job) {
+  const structuredSkills = [
+    ...(job?.requirements?.hardSkills ?? []),
+    ...(job?.requirements?.tools ?? []),
+  ];
+
+  return structuredSkills.length > 0 ? structuredSkills : job.extractedSkills;
+}
+
 function isRelevantJobPosting(job, careerTarget = {}) {
+  if (!isRelevantLocation(job, careerTarget)) {
+    return false;
+  }
+
+  if (!isRelevantIndustry(job, careerTarget)) {
+    return false;
+  }
+
   const role = normalizeText(careerTarget.role);
+  const text = normalizeText(`${job.title || ""} ${job.description || ""}`);
   if (!role) {
     return true;
   }
 
-  const text = normalizeText(`${job.title || ""} ${job.description || ""}`);
   if (!text) {
     return false;
   }
@@ -134,6 +162,36 @@ function isRelevantJobPosting(job, careerTarget = {}) {
 
   const roleTokens = meaningfulRoleTokens(role);
   return roleTokens.length === 0 || roleTokens.every((token) => text.includes(token));
+}
+
+function isRelevantIndustry(job, careerTarget = {}) {
+  if (!careerTarget.industry) {
+    return true;
+  }
+
+  return jobMatchesIndustry(job, careerTarget.industry);
+}
+
+function isRelevantLocation(job, careerTarget = {}) {
+  const region = getRegionOption(careerTarget.region);
+  if (region.id === "all-malaysia") {
+    return true;
+  }
+
+  const location = normalizeText(job.location);
+  if (!location) {
+    return false;
+  }
+
+  if (region.id === "remote-malaysia") {
+    return containsAny(location, ["remote", "hybrid"]);
+  }
+
+  return containsAny(location, [
+    region.label,
+    region.searchValue,
+    region.searchValue.replace(/,\s*Malaysia/i, ""),
+  ]);
 }
 
 function isUiUxRole(role) {
@@ -259,6 +317,23 @@ function toDisplaySkill(skill) {
     "amazon web services": "AWS",
     azure: "Azure",
     "microsoft azure": "Azure",
+    figma: "Figma",
+    figjam: "FigJam",
+    "fig jam": "FigJam",
+    miro: "Miro",
+    "google suite": "Google Suite",
+    "google workspace": "Google Suite",
+    "g suite": "Google Suite",
+    slack: "Slack",
+    "ui/ux principles": "UI/UX Principles",
+    "ui ux principles": "UI/UX Principles",
+    "ux principles": "UI/UX Principles",
+    "ui/ux guidelines": "UI/UX Guidelines",
+    "ui ux guidelines": "UI/UX Guidelines",
+    "ux guidelines": "UI/UX Guidelines",
+    "ui/ux best practices": "UI/UX Best Practices",
+    "ui ux best practices": "UI/UX Best Practices",
+    "ux best practices": "UI/UX Best Practices",
   };
   return canonical[skill.toLowerCase()] || skill;
 }

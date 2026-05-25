@@ -8,23 +8,18 @@ Accepted, amended
 
 SkillBridge needs real job data for a coursework MVP. JobStreet, LinkedIn, and Glassdoor are attractive comparison targets, but their public job-search access is not suitable for a quick student MVP without partner approval or scraping risk.
 
-Careerjet was the first implemented provider, but its current integration depends on a public registered website URL and referer. That is workable after deployment, but fragile for local development. Jooble's REST API accepts a server-side API key and keyword/location search request, so it is a better default for local demos.
+Careerjet was tested as a second provider, but its API key/referer flow rejected the local project request with 403. Jooble's REST API accepts a server-side API key and keyword/location search request, so it is the stable provider for local demos.
 
 ## Decision
 
-V1 uses a licensed API provider layer:
+V1 uses a single licensed API provider:
 
-- Default mode: `JOB_PROVIDER=auto`
-- Provider order: Jooble first, Careerjet fallback
-- Force Jooble only: `JOB_PROVIDER=jooble`
-- Force Careerjet only: `JOB_PROVIDER=careerjet`
-
-The app does not merge both providers on every request. It uses Jooble first and only falls back when Jooble is missing, unavailable, or returns no usable jobs. This preserves quota and avoids duplicate market signals.
+- Supported mode: `JOB_PROVIDER=jooble`
+- Removed provider: Careerjet
 
 ## Consequences
 
 - The MVP can use real job listings without scraping.
 - The implementation stays small enough for a university demo.
-- Provider-specific details remain isolated behind the Job Search Provider layer.
-- Local development works better with Jooble.
-- Careerjet remains available after deployment or when the user wants to force it.
+- The job-search path avoids Careerjet 403 failures and public-referer configuration.
+- Adding another provider later must start as a separate tested integration, not as a silent fallback.

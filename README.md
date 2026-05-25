@@ -7,8 +7,8 @@ Real full-stack implementation for the SkillBridge AI Career Navigator MVP.
 - Client: React + Vite
 - Server: Express
 - CV parsing: PDF, DOCX, JPG, PNG, and WebP on the server
-- Skill extraction: Gemini primary, local rule fallback
-- Job data: Jooble first, Careerjet fallback
+- Skill extraction: Gemini primary, local rule fallback for text CVs
+- Job data: Jooble API
 - Supabase: direct REST API support for profile snapshots and job-search cache
 
 ## Setup
@@ -36,28 +36,26 @@ Copy `.env.example` to `server/.env` and fill keys when available.
 
 ```env
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
-JOB_PROVIDER=auto
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-2.5-flash-lite
+JOB_PROVIDER=jooble
 JOOBLE_API_KEY=
-CAREERJET_AFFID=
-CAREERJET_API_KEY=
-CAREERJET_LOCALE=en_MY
-CLIENT_PUBLIC_URL=https://your-skillbridge-site.vercel.app
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_server_only_service_role_key
 JOB_CACHE_ENABLED=true
 JOB_CACHE_TTL_MINUTES=360
 ```
 
-`JOB_PROVIDER=auto` is the recommended setting. It tries Jooble first, then falls back to Careerjet if Jooble is missing, unavailable, or returns no usable jobs.
+`JOB_PROVIDER=jooble` is the supported job-search setting. Careerjet was removed from the runtime path because its API key/referer flow rejected the local project request.
 
-Use `JOB_PROVIDER=jooble` to force Jooble only, or `JOB_PROVIDER=careerjet` to force Careerjet only.
+`GEMINI_MODEL` handles CV skill extraction, roadmap JSON generation, and image CV OCR for JPG, PNG, and WebP uploads. `GEMINI_FALLBACK_MODELS` is a comma-separated list used only when the primary Gemini chat model returns a transient 429, 500, 502, 503, or 504 error.
 
-`JOOBLE_API_KEY` is the preferred job API key for local development because Jooble does not require a public website referer in the app's request flow. `CAREERJET_API_KEY` is still supported. `CAREERJET_AFFID` remains accepted only as a backward-compatible fallback variable name.
+`JOOBLE_API_KEY` is required for live job-market data. Jooble does not require a public website referer in the app's request flow, so it is the stable provider for local demos.
 
-Without `JOOBLE_API_KEY` or `CAREERJET_API_KEY`, the app still runs, but the job-search section reports that no job API is configured.
+Without `JOOBLE_API_KEY`, the app still runs, but the job-search section reports that no job API is configured.
 
-Job searches are cached server-side in Supabase when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set. The cache key is based on provider, role, and location, so a second student searching the same role/location can reuse the saved result instead of spending another Jooble/Careerjet request. Default cache TTL is 360 minutes.
+Job searches are cached server-side in Supabase when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set. The cache key is based on provider, role, and location, so a second student searching the same role/location can reuse the saved result instead of spending another Jooble request. Default cache TTL is 360 minutes.
 
 ## Supabase
 

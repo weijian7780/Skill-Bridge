@@ -3,18 +3,18 @@ import assert from "node:assert/strict";
 
 import { buildStudentProfileSnapshot } from "./studentProfileRepository.js";
 import { loadStudentProfileSnapshot } from "./studentProfileRepository.js";
+import { saveStudentProfileSnapshot } from "./studentProfileRepository.js";
 
 test("builds a Supabase profile snapshot without storing raw CV text", () => {
   const snapshot = buildStudentProfileSnapshot({
     userId: "user-123",
     careerTarget: {
       role: "Data Analyst",
-      industry: "Data / IT",
+      industry: "data-it",
       region: "Sabah, Malaysia",
-      companyTypes: ["MNC"],
     },
     skillProfile: {
-      provider: "gemini-2.5-flash",
+      provider: "Gemini",
       technicalSkills: ["Python", "Excel"],
       softSkills: ["Communication"],
       certifications: [],
@@ -57,6 +57,23 @@ test("builds a Supabase profile snapshot without storing raw CV text", () => {
   assert.equal(JSON.stringify(snapshot).includes("private LLM prompt"), false);
 });
 
+test("does not write prototype profile metrics when calculated values are missing", () => {
+  const snapshot = buildStudentProfileSnapshot({
+    userId: "user-123",
+    careerTarget: {},
+    skillProfile: {},
+    missingSkills: [],
+    roadmap: [],
+    cvDocument: null,
+  });
+
+  assert.equal(snapshot.university, "");
+  assert.equal(snapshot.study_year, "");
+  assert.equal(snapshot.program, "");
+  assert.equal(snapshot.readiness_score, 0);
+  assert.equal(snapshot.roadmap_progress, 0);
+});
+
 test("loads the current user's Supabase profile snapshot", async () => {
   const calls = [];
   const result = await loadStudentProfileSnapshot({
@@ -94,4 +111,28 @@ test("does not load profile snapshots without a configured Supabase client", asy
   assert.equal(result.ok, false);
   assert.match(result.reason, /not configured/);
   assert.equal(result.snapshot, null);
+});
+
+test("flags Supabase profile save auth failures", async () => {
+  const result = await saveStudentProfileSnapshot({
+    supabaseClient: {
+      async upsert() {
+        return {
+          data: null,
+          error: {
+            status: 401,
+            isAuthError: true,
+            message: "JWT expired",
+          },
+        };
+      },
+    },
+    snapshot: {
+      user_id: "user-123",
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.authExpired, true);
+  assert.match(result.reason, /sign in again/i);
 });

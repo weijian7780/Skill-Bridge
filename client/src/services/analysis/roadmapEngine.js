@@ -17,7 +17,7 @@ const roadmapLibrary = {
 };
 
 export function buildRoadmap(missingSkills) {
-  const skills = missingSkills.length > 0 ? missingSkills : ["SQL Optimization", "Power BI"];
+  const skills = missingSkills ?? [];
 
   return skills.map((skill, index) => ({
     month: index + 1,

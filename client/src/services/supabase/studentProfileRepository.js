@@ -11,6 +11,10 @@ function sanitizeSkillProfile(skillProfile = {}) {
 }
 
 function sanitizeCvDocument(cvDocument = {}) {
+  if (!cvDocument) {
+    return null;
+  }
+
   if (!cvDocument.fileName && !cvDocument.storagePath) {
     return null;
   }
@@ -33,6 +37,23 @@ function sanitizeRoadmapItems(roadmap = []) {
   }));
 }
 
+function isSupabaseAuthError(error) {
+  return Boolean(error?.isAuthError) || Number(error?.status) === 401;
+}
+
+function failedProfileResult(error, fallbackReason, extra = {}) {
+  const authExpired = isSupabaseAuthError(error);
+
+  return {
+    ok: false,
+    reason: authExpired
+      ? "Supabase session expired. Sign in again to sync profile data."
+      : error?.message ?? fallbackReason,
+    authExpired,
+    ...extra,
+  };
+}
+
 export function buildStudentProfileSnapshot({
   userId,
   careerTarget,
@@ -40,19 +61,18 @@ export function buildStudentProfileSnapshot({
   missingSkills,
   roadmap,
   cvDocument,
-  readinessScore = 68,
-  roadmapProgress = 25,
+  readinessScore = 0,
+  roadmapProgress = 0,
 }) {
   return {
     user_id: userId,
-    university: "UMS",
-    study_year: "Year 3",
-    program: "Computer Science",
+    university: "",
+    study_year: "",
+    program: "",
     career_target: {
       role: careerTarget?.role ?? "",
       industry: careerTarget?.industry ?? "",
       region: careerTarget?.region ?? "",
-      company_types: careerTarget?.companyTypes ?? [],
     },
     skill_profile: sanitizeSkillProfile(skillProfile),
     missing_skills: missingSkills ?? [],
@@ -79,11 +99,9 @@ export async function saveStudentProfileSnapshot({ supabaseClient, snapshot }) {
   );
 
   if (error) {
-    return {
-      ok: false,
-      reason: error.message,
+    return failedProfileResult(error, "Could not save student profile snapshot.", {
       data: null,
-    };
+    });
   }
 
   return {
@@ -108,11 +126,9 @@ export async function loadStudentProfileSnapshot({ supabaseClient, userId }) {
   );
 
   if (error) {
-    return {
-      ok: false,
-      reason: error.message ?? "Could not load student profile snapshot.",
+    return failedProfileResult(error, "Could not load student profile snapshot.", {
       snapshot: null,
-    };
+    });
   }
 
   return {

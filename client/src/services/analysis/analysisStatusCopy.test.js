@@ -6,7 +6,7 @@ import { buildAnalysisActionLabel, buildAnalysisScoreMessage } from "./analysisS
 test("explains that job API rejection blocks real score calculation", () => {
   const message = buildAnalysisScoreMessage({
     analysisStatus: "needs_market",
-    jobStatus: "Careerjet rejected the request with 403. Check CAREERJET_API_KEY and set CLIENT_PUBLIC_URL to the public website URL registered with Careerjet, not localhost.",
+    jobStatus: "Jooble rejected the request with 403. Check JOOBLE_API_KEY.",
     matchedCount: 0,
   });
 

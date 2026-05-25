@@ -3,11 +3,31 @@ import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
 import { getRegionAnalysisCopy, getRegionOption } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
+import { useAuth } from "../state/AuthContext.jsx";
 
 export function HomePage() {
-  const { analysis, careerTarget, missingSkills } = useAppState();
+  const { analysis, careerTarget, jobs, missingSkills, roadmap } = useAppState();
+  const { session } = useAuth();
+  const displayName = session?.user?.email?.split("@")[0] || "Student";
   const regionCopy = getRegionAnalysisCopy(careerTarget.region);
   const regionLabel = getRegionOption(careerTarget.region).label;
+  const matchedCount = analysis.matchedSkills.length;
+  const loadedJobCount = analysis.marketEvidence.rawJobCount || jobs.length;
+  const relevantJobCount = analysis.marketEvidence.jobCount;
+  const marketStatValue = analysis.status === "ready"
+    ? relevantJobCount
+    : loadedJobCount > 0
+      ? loadedJobCount
+      : "Pending";
+  const marketStatLabel = analysis.status === "ready"
+    ? "Jobs Used"
+    : loadedJobCount > 0
+      ? "Jobs Loaded"
+      : "Market";
+  const topMarketSkills = Object.entries(analysis.marketEvidence.skillDemand)
+    .sort(([skillA, countA], [skillB, countB]) => countB - countA || skillA.localeCompare(skillB))
+    .slice(0, 3)
+    .map(([skill]) => skill);
   const priorityTitle = analysis.status === "ready"
     ? `Review your ${missingSkills.length} market skill gaps`
     : analysis.status === "needs_market"
@@ -18,6 +38,11 @@ export function HomePage() {
     : analysis.status === "needs_market"
       ? "Job API results are required before SkillBridge can calculate real market gaps."
       : "Confirm your latest CV before the app compares your resume with market jobs.";
+  const marketInsightCopy = analysis.status === "ready"
+    ? `${relevantJobCount} region-matched job ${relevantJobCount === 1 ? "post is" : "posts are"} currently used as evidence for ${careerTarget.role} ${regionCopy}.`
+    : analysis.status === "needs_market"
+      ? `Open Analysis to load job posts for ${careerTarget.role} ${regionCopy}.`
+      : "Confirm your latest CV before loading job-market evidence.";
   const readinessCircumference = 251.2;
   const readinessOffset = readinessCircumference - (analysis.readinessScore / 100) * readinessCircumference;
 
@@ -26,7 +51,7 @@ export function HomePage() {
       <main className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pt-24 py-8 space-y-gutter">
         <section className="mt-4">
           <h1 className="font-headline-xl-mobile md:font-headline-xl text-headline-xl-mobile md:text-headline-xl">
-            Hello, Alex
+            Hello, {displayName}
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
             Your journey to becoming a <span className="text-primary font-semibold">{careerTarget.role}</span> in{" "}
@@ -73,10 +98,10 @@ export function HomePage() {
 
           <section className="md:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              ["check_circle", "12", "Matched", "text-primary", "bg-primary/10"],
+              ["check_circle", matchedCount, "Matched", "text-primary", "bg-primary/10"],
               ["warning", missingSkills.length, "Missing", "text-error", "bg-error-container/20"],
-              ["school", "4", "Courses", "text-secondary", "bg-secondary-container/30"],
-              ["trending_up", "High", "Demand", "text-primary", "bg-primary-container/20"],
+              ["map", roadmap.length, "Plan Items", "text-secondary", "bg-secondary-container/30"],
+              ["business_center", marketStatValue, marketStatLabel, "text-primary", "bg-primary-container/20"],
             ].map(([icon, value, label, iconClass, bgClass]) => (
               <div key={label} className="bg-surface-container-low border border-outline-variant p-4 rounded-xl flex items-center gap-4">
                 <div className={`p-2 rounded-lg ${iconClass} ${bgClass}`}>
@@ -97,7 +122,7 @@ export function HomePage() {
                 ["/cv", "upload_file", "Upload CV"],
                 ["/analysis", "analytics", "Analyze Skill Gap"],
                 ["/roadmap", "map", "View Roadmap"],
-                ["/target", "search", "Explore Market"],
+                ["/target", "track_changes", "Change Target"],
               ].map(([to, icon, label]) => (
                 <Link key={label} to={to} className="bg-surface-container-high border border-outline-variant p-6 rounded-xl hover:border-primary transition-colors flex flex-col items-center gap-3 text-center active:scale-95">
                   <Icon name={icon} className="text-primary text-3xl" />
@@ -114,18 +139,23 @@ export function HomePage() {
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-2 text-primary">
                 <Icon name="location_on" />
-                <span className="font-label-md text-label-md uppercase tracking-widest">Market Insights: Sabah</span>
+                <span className="font-label-md text-label-md uppercase tracking-widest">Market Insights: {regionLabel}</span>
               </div>
-              <h4 className="font-headline-lg text-headline-lg">Tech Talent Demand is Rising</h4>
+              <h4 className="font-headline-lg text-headline-lg">{careerTarget.role} Demand</h4>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                Data Analyst roles in Sabah are used here as the initial target market. Live job API data will replace this insight when a provider key is configured.
+                {marketInsightCopy}
               </p>
-              <div className="flex gap-2">
-                {["SQL", "PowerBI", "Python"].map((skill) => (
+              <div className="flex flex-wrap gap-2">
+                {topMarketSkills.map((skill) => (
                   <span key={skill} className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-sm">
                     {skill}
                   </span>
                 ))}
+                {topMarketSkills.length === 0 && (
+                  <span className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-sm">
+                    No market skills loaded yet
+                  </span>
+                )}
               </div>
             </div>
           </section>

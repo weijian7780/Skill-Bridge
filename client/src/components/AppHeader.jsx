@@ -1,13 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { Icon } from "./Icon.jsx";
-
-const navItems = [
-  { to: "/home", label: "Home" },
-  { to: "/cv", label: "CV" },
-  { to: "/analysis", label: "Analysis" },
-  { to: "/roadmap", label: "Roadmap" },
-  { to: "/profile", label: "Profile" },
-];
+import { appNavigationItems } from "../services/navigation/appNavigation.js";
 
 export function AppHeader({ simple = false }) {
   return (
@@ -21,7 +14,7 @@ export function AppHeader({ simple = false }) {
 
       {!simple && (
         <nav className="hidden md:flex gap-8 items-center">
-          {navItems.map((item) => (
+          {appNavigationItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

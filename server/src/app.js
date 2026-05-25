@@ -34,7 +34,8 @@ export function createApp() {
 
   app.use((error, _request, response, _next) => {
     console.error(error);
-    response.status(error.statusCode || 500).json({
+    const statusCode = error.statusCode || (error.code === "LIMIT_FILE_SIZE" ? 413 : 500);
+    response.status(statusCode).json({
       error: error.message || "Unexpected server error",
     });
   });

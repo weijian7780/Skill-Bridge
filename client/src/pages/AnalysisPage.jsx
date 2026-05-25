@@ -8,6 +8,11 @@ import {
   buildSkillEvidenceRows,
 } from "../services/analysis/analysisDiagnosticDisplay.js";
 import {
+  buildMarketJobTargetKey,
+  buildMarketJobSearchTriggerKey,
+  shouldReuseLoadedMarketJobs,
+} from "../services/analysis/marketJobSearchState.js";
+import {
   getCompanyMatchToggleLabel,
   getVisibleCompanyMatches,
   shouldShowCompanyMatchToggle,
@@ -24,7 +29,9 @@ export function AnalysisPage() {
     careerTarget,
     cvDocument,
     jobs,
+    loadedJobTargetKey,
     jobStatus,
+    setLoadedJobTargetKey,
     setJobs,
     setJobStatus,
     setRoadmapPlan,
@@ -96,26 +103,56 @@ export function AnalysisPage() {
     () => shouldShowCompanyMatchToggle(allCompanyRequirementMatches),
     [allCompanyRequirementMatches],
   );
+  const jobTargetKey = useMemo(
+    () => buildMarketJobTargetKey({
+      role: careerTarget.role,
+      industry: careerTarget.industry,
+      regionSearchValue,
+    }),
+    [careerTarget.industry, careerTarget.role, regionSearchValue],
+  );
+  const jobSearchTriggerKey = useMemo(
+    () => buildMarketJobSearchTriggerKey({
+      hasConfirmedCv,
+      role: careerTarget.role,
+      industry: careerTarget.industry,
+      regionSearchValue,
+      jobSearchAttempt,
+    }),
+    [careerTarget.industry, careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionSearchValue],
+  );
 
   useEffect(() => {
-    if (!hasConfirmedCv) {
+    if (!jobSearchTriggerKey) {
       return;
     }
 
-    const searchKey = `${careerTarget.role}|${regionSearchValue}|${jobSearchAttempt}`;
-    if (lastJobSearchKey.current === searchKey) {
+    if (lastJobSearchKey.current === jobSearchTriggerKey) {
+      return;
+    }
+
+    if (shouldReuseLoadedMarketJobs({
+      jobSearchAttempt,
+      jobs,
+      loadedJobTargetKey,
+      currentJobTargetKey: jobTargetKey,
+      analysisStatus: analysis.status,
+    })) {
+      lastJobSearchKey.current = jobSearchTriggerKey;
       return;
     }
 
     let cancelled = false;
-    lastJobSearchKey.current = searchKey;
+    lastJobSearchKey.current = jobSearchTriggerKey;
     setJobs([]);
+    setLoadedJobTargetKey("");
     setJobStatus(`Loading market jobs for ${careerTarget.role} ${regionAnalysisCopy}...`);
 
     async function loadJobs() {
       try {
         const result = await searchMarketJobs({
           role: careerTarget.role,
+          industry: careerTarget.industry,
           region: regionSearchValue,
         });
 
@@ -127,6 +164,7 @@ export function AnalysisPage() {
         const providerName = result.source || "Job provider";
         const cacheLabel = result.cached ? "cached " : "";
         setJobs(loadedJobs);
+        setLoadedJobTargetKey(jobTargetKey);
         setJobStatus(
           result.configured
             ? `Loaded ${loadedJobs.length} ${cacheLabel}${providerName} jobs for this target.`
@@ -135,6 +173,7 @@ export function AnalysisPage() {
       } catch (error) {
         if (!cancelled) {
           setJobs([]);
+          setLoadedJobTargetKey("");
           setJobStatus(error.message);
           lastJobSearchKey.current = "";
         }
@@ -146,7 +185,7 @@ export function AnalysisPage() {
     return () => {
       cancelled = true;
     };
-  }, [careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionAnalysisCopy, regionSearchValue, setJobStatus, setJobs]);
+  }, [careerTarget.industry, careerTarget.role, jobSearchAttempt, jobSearchTriggerKey, jobTargetKey, regionAnalysisCopy, regionSearchValue, setJobStatus, setJobs, setLoadedJobTargetKey]);
 
   function retryJobSearch() {
     setJobSearchAttempt((attempt) => attempt + 1);
@@ -262,7 +301,11 @@ export function AnalysisPage() {
                   onClick={generateRoadmap}
                   type="button"
                 >
-                  {isGeneratingRoadmap ? "Generating Roadmap..." : "Build Roadmap From These Gaps"}
+                  {isGeneratingRoadmap
+                    ? "Generating Roadmap..."
+                    : missingSkills.length === 0
+                      ? "Review No-Gap Result"
+                      : "Build Roadmap From These Gaps"}
                   <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
                 </button>
               ) : (
@@ -475,7 +518,7 @@ export function AnalysisPage() {
                             {job.matchScore === null ? "N/A" : `${job.matchScore}%`}
                           </span>
                           <span className="block font-label-sm text-label-sm text-on-surface-variant">
-                            {job.matchScore === null ? "not scored" : "match"}
+                            {job.matchScore === null ? "not scored" : job.matchLabel || "match"}
                           </span>
                         </div>
                       </div>

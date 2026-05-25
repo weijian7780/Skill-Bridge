@@ -7,6 +7,7 @@ export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
   const jobCount = analysis?.marketEvidence?.jobCount ?? analysis?.marketEvidence?.jobMatches?.length ?? 0;
 
   if (analysis?.status === "ready") {
+    const partialJobCount = analysis?.marketEvidence?.partialJobCount ?? 0;
     const diagnosis = buildMarketDiagnosis({
       role,
       region,
@@ -21,7 +22,9 @@ export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
       label: `${role} match`,
       value: `${analysis.readinessScore ?? 0}%`,
       isCalculated: true,
-      formula: `Average match across the top ${topMatchCount} company requirement ${topMatchCount === 1 ? "match" : "matches"}.`,
+      formula: partialJobCount > 0
+        ? `Average partial match across the top ${topMatchCount} company requirement ${topMatchCount === 1 ? "match" : "matches"} because ${partialJobCount} ${partialJobCount === 1 ? "job only exposed a short requirement snippet" : "jobs only exposed short requirement snippets"}.`
+        : `Average match across the top ${topMatchCount} company requirement ${topMatchCount === 1 ? "match" : "matches"}.`,
       ...diagnosis,
     };
   }

@@ -58,6 +58,32 @@ test("explains the calculated score using top company requirement matches", () =
   assert.equal(display.formula, "Average match across the top 2 company requirement matches.");
 });
 
+test("labels calculated scores as partial when some job requirements came from snippets", () => {
+  const display = buildDiagnosticScoreDisplay({
+    analysis: {
+      status: "ready",
+      readinessScore: 50,
+      matchedSkills: ["Figma"],
+      missingSkills: ["Miro"],
+      marketEvidence: {
+        partialJobCount: 1,
+        skillDemand: {
+          Figma: 1,
+          Miro: 1,
+        },
+        jobMatches: [
+          { matchScore: 50, partialRequirements: true },
+        ],
+      },
+    },
+    careerTarget: {
+      role: "UI/UX Designer",
+    },
+  });
+
+  assert.equal(display.formula, "Average partial match across the top 1 company requirement match because 1 job only exposed a short requirement snippet.");
+});
+
 test("summarizes what the market evidence says about the student's CV", () => {
   const display = buildDiagnosticScoreDisplay({
     analysis: {

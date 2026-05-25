@@ -24,7 +24,7 @@ test("builds a latest-CV extraction draft from upload result and browser file", 
         textLength: 3200,
       },
       skillProfile: {
-        provider: "gemini-2.5-flash",
+        provider: "Gemini",
         technicalSkills: ["Python", "SQL"],
         softSkills: ["Communication"],
         certifications: [],
@@ -52,7 +52,7 @@ test("converts comma and newline text into a clean unique list", () => {
 test("applies editable fields to a pending extracted skill profile", () => {
   const profile = applySkillProfileEdits({
     skillProfile: {
-      provider: "gemini-2.5-flash",
+      provider: "Gemini",
       technicalSkills: ["Python"],
       softSkills: [],
       certifications: [],
@@ -69,7 +69,7 @@ test("applies editable fields to a pending extracted skill profile", () => {
   });
 
   assert.deepEqual(profile, {
-    provider: "gemini-2.5-flash",
+    provider: "Gemini",
     technicalSkills: ["Python", "SQL"],
     softSkills: ["Communication"],
     certifications: ["Google Data Analytics"],
@@ -93,7 +93,7 @@ test("commits a reviewed extraction into latest-CV state that analysis can use",
         textLength: 3200,
       },
       skillProfile: {
-        provider: "gemini-2.5-flash",
+        provider: "Gemini",
         technicalSkills: ["SQL"],
         softSkills: ["Communication"],
         certifications: [],

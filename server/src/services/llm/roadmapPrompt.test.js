@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildRoadmapPrompt } from "./geminiRoadmapClient.js";
+import { buildRoadmapPrompt } from "./roadmapPrompt.js";
 
-test("roadmap prompt asks Gemini for concise visual-card wording", () => {
+test("roadmap prompt asks AI for concise visual-card wording", () => {
   const prompt = buildRoadmapPrompt({
     careerTarget: { role: "Data Analyst" },
     skillProfile: { technicalSkills: ["Figma"] },

@@ -22,3 +22,24 @@ test("builds job search URL for all Malaysia target market", () => {
     "/jobs/search?role=Business+Intelligence+Intern&location=Malaysia",
   );
 });
+
+test("builds job search URL from a changed user target", () => {
+  assert.equal(
+    buildMarketJobSearchPath({
+      role: "UI/UX Designer",
+      region: "penang",
+    }),
+    "/jobs/search?role=UI%2FUX+Designer&location=Penang%2C+Malaysia",
+  );
+});
+
+test("includes selected industry in the job search URL", () => {
+  assert.equal(
+    buildMarketJobSearchPath({
+      role: "Data Analyst",
+      region: "all-malaysia",
+      industry: "Finance",
+    }),
+    "/jobs/search?role=Data+Analyst&location=Malaysia&industry=finance",
+  );
+});

@@ -94,6 +94,40 @@ test("builds a real roadmap page view from a generated analysis plan", () => {
   assert.equal(view.basisOverview, "Close the most repeated company gaps first.");
 });
 
+test("normalizes scalar generated roadmap fields before rendering", () => {
+  const view = buildRoadmapPageView({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "Sabah, Malaysia",
+    },
+    analysis: {
+      status: "ready",
+      readinessScore: 20,
+      missingSkills: ["Power BI"],
+    },
+    roadmapPlan: {
+      overview: "Close Power BI gap first.",
+      source: "gemini",
+      assumptions: "Generated from company evidence.",
+      items: [
+        {
+          month: 1,
+          skill: "Power BI",
+          title: "Build Power BI evidence",
+          howToStart: "Build one dashboard from a small CSV dataset.",
+          tasks: "Publish the dashboard screenshot.",
+          companyEvidence: "TWO95, ResMed",
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(view.assumptions, ["Generated from company evidence."]);
+  assert.deepEqual(view.pathItems[0].companyChips, ["TWO95", "ResMed"]);
+  assert.deepEqual(view.pathItems[0].howToStart, ["Build one dashboard from a small CSV dataset."]);
+  assert.deepEqual(view.pathItems[0].taskChips, ["Publish the dashboard screenshot."]);
+});
+
 test("builds a pre-generation roadmap page view when analysis has not produced a plan", () => {
   const view = buildRoadmapPageView({
     careerTarget: {
@@ -110,6 +144,34 @@ test("builds a pre-generation roadmap page view when analysis has not produced a
   assert.equal(view.isGenerated, false);
   assert.equal(view.heroTitle, "Roadmap not generated yet");
   assert.match(view.emptyStateMessage, /market job evidence/);
+  assert.deepEqual(view.pathItems, []);
+});
+
+test("builds a no-gap roadmap result when analysis found no missing skills", () => {
+  const view = buildRoadmapPageView({
+    careerTarget: {
+      role: "UI/UX Designer",
+      region: "all-malaysia",
+    },
+    analysis: {
+      status: "ready",
+      readinessScore: 100,
+      missingSkills: [],
+    },
+    roadmapPlan: {
+      overview: "No missing market skills were detected for this target.",
+      source: "deterministic",
+      assumptions: [],
+      items: [],
+    },
+  });
+
+  assert.equal(view.isGenerated, true);
+  assert.equal(view.hasNoGaps, true);
+  assert.equal(view.heroTitle, "No priority gaps detected");
+  assert.equal(view.sourceLabel, "No priority gaps");
+  assert.equal(view.summaryCards[0].value, "0");
+  assert.match(view.basisOverview, /No missing market skills/);
   assert.deepEqual(view.pathItems, []);
 });
 

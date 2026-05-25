@@ -1,8 +1,17 @@
 const DEFAULT_CACHE_TTL_MINUTES = 360;
+const DEFAULT_SKILL_EXTRACTOR_VERSION = "job-requirements-v1";
 
-export function buildJobCacheKey({ provider = "auto", role = "", location = "" }) {
+export function buildJobCacheKey({
+  provider = "auto",
+  version = DEFAULT_SKILL_EXTRACTOR_VERSION,
+  industry = "",
+  role = "",
+  location = "",
+}) {
   return [
     normalizeCachePart(provider),
+    normalizeCachePart(version),
+    normalizeCachePart(industry || "any-industry"),
     normalizeCachePart(role),
     normalizeCachePart(location),
   ].join("|");
@@ -18,6 +27,8 @@ export function createSupabaseJobCache({
   async function get(searchContext) {
     const cacheKey = buildJobCacheKey({
       provider: config.provider,
+      version: config.version,
+      industry: searchContext.industry,
       role: searchContext.role,
       location: searchContext.location,
     });
@@ -77,6 +88,8 @@ export function createSupabaseJobCache({
   async function set(searchContext, providerResult) {
     const cacheKey = buildJobCacheKey({
       provider: config.provider,
+      version: config.version,
+      industry: searchContext.industry,
       role: searchContext.role,
       location: searchContext.location,
     });
@@ -144,6 +157,7 @@ function readJobCacheConfig(env) {
   const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL || "";
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_KEY || "";
   const provider = env.JOB_PROVIDER || "auto";
+  const version = env.JOB_SKILL_EXTRACTOR_VERSION || DEFAULT_SKILL_EXTRACTOR_VERSION;
   const ttlMinutes = Number.parseInt(env.JOB_CACHE_TTL_MINUTES || "", 10) || DEFAULT_CACHE_TTL_MINUTES;
   const enabled = String(env.JOB_CACHE_ENABLED ?? "true").toLowerCase() !== "false";
 
@@ -152,6 +166,7 @@ function readJobCacheConfig(env) {
       configured: false,
       reason: "Supabase job cache is disabled.",
       provider,
+      version,
       ttlMinutes,
     };
   }
@@ -161,6 +176,7 @@ function readJobCacheConfig(env) {
       configured: false,
       reason: "Supabase job cache is not configured.",
       provider,
+      version,
       ttlMinutes,
     };
   }
@@ -171,6 +187,7 @@ function readJobCacheConfig(env) {
     url,
     serviceRoleKey,
     provider,
+    version,
     ttlMinutes,
   };
 }

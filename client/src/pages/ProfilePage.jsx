@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
 import { getRegionOption } from "../services/career/regionOptions.js";
@@ -7,11 +7,21 @@ import { useAuth } from "../state/AuthContext.jsx";
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { analysis, careerTarget, cvDocument, skillProfile, missingSkills, syncStatus } = useAppState();
+  const { analysis, careerTarget, cvDocument, skillProfile, missingSkills, roadmap, syncStatus } = useAppState();
   const { config, logout, session } = useAuth();
-  const displayName = session?.user?.email?.split("@")[0] ?? "Alex Mercer";
+  const displayName = session?.user?.email?.split("@")[0] ?? "Student";
   const gaps = missingSkills;
   const regionLabel = getRegionOption(careerTarget.region).label;
+  const educationSummary = skillProfile.education || "No education saved yet";
+  const readinessLabel = analysis.status === "ready" ? "Live Match" : "Pending";
+  const completedRoadmapCount = roadmap.filter((item) => {
+    const status = String(item.status || "").toLowerCase();
+    return status === "completed" || status === "done";
+  }).length;
+  const roadmapProgress = roadmap.length > 0
+    ? Math.round((completedRoadmapCount / roadmap.length) * 100)
+    : 0;
+  const roadmapStatus = roadmap.length > 0 ? `${roadmap.length} Items` : "Pending";
 
   async function handleSignOut() {
     await logout();
@@ -23,7 +33,7 @@ export function ProfilePage() {
       <main className="pt-24 px-margin-mobile max-w-2xl mx-auto space-y-md">
         <section className="mb-lg">
           <h2 className="font-headline-lg text-headline-lg text-on-surface">{displayName}</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant">UMS Year 3 - Computer Science</p>
+          <p className="font-body-md text-body-md text-on-surface-variant">{educationSummary}</p>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-sm">
@@ -34,11 +44,11 @@ export function ProfilePage() {
             </div>
             <div>
               <div className="flex items-end gap-xs">
-                <span className="font-headline-xl-mobile text-headline-xl-mobile text-primary">68%</span>
-                <span className="font-label-md text-label-md text-primary-container pb-1">On Track</span>
+                <span className="font-headline-xl-mobile text-headline-xl-mobile text-primary">{analysis.readinessScore}%</span>
+                <span className="font-label-md text-label-md text-primary-container pb-1">{readinessLabel}</span>
               </div>
               <div className="w-full bg-surface-variant h-1.5 rounded-full mt-sm overflow-hidden">
-                <div className="bg-primary h-full w-[68%]" />
+                <div className="bg-primary h-full" style={{ width: `${analysis.readinessScore}%` }} />
               </div>
             </div>
           </article>
@@ -50,11 +60,11 @@ export function ProfilePage() {
             </div>
             <div>
               <div className="flex items-end gap-xs">
-                <span className="font-headline-xl-mobile text-headline-xl-mobile text-secondary">25%</span>
-                <span className="font-label-md text-label-md text-on-secondary-container pb-1">Completed</span>
+                <span className="font-headline-xl-mobile text-headline-xl-mobile text-secondary">{roadmap.length}</span>
+                <span className="font-label-md text-label-md text-on-secondary-container pb-1">{roadmapStatus}</span>
               </div>
               <div className="w-full bg-surface-variant h-1.5 rounded-full mt-sm overflow-hidden">
-                <div className="bg-secondary h-full w-[25%]" />
+                <div className="bg-secondary h-full" style={{ width: `${roadmapProgress}%` }} />
               </div>
             </div>
           </article>
@@ -70,7 +80,7 @@ export function ProfilePage() {
               <p className="font-body-md text-body-md text-on-surface">{careerTarget.role}</p>
               <p className="font-body-sm text-body-sm text-on-surface-variant">{regionLabel}</p>
             </div>
-            <a className="text-primary hover:underline font-label-md text-label-md" href="/target">Edit</a>
+            <Link className="text-primary hover:underline font-label-md text-label-md" to="/target">Edit</Link>
           </div>
         </article>
 

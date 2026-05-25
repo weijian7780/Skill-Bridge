@@ -1,18 +1,11 @@
 import { NavLink } from "react-router-dom";
 import { Icon } from "./Icon.jsx";
-
-const items = [
-  { to: "/home", icon: "home", label: "Home" },
-  { to: "/cv", icon: "description", label: "CV" },
-  { to: "/analysis", icon: "analytics", label: "Analysis" },
-  { to: "/roadmap", icon: "map", label: "Roadmap" },
-  { to: "/profile", icon: "person", label: "Profile" },
-];
+import { appNavigationItems } from "../services/navigation/appNavigation.js";
 
 export function BottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface-container shadow-md rounded-t-xl">
-      {items.map((item) => (
+      {appNavigationItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}

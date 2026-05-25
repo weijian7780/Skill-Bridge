@@ -13,12 +13,16 @@ export async function generateRoadmap({ careerTarget, skillProfile, analysis }) 
     };
   }
 
-  const geminiRoadmap = await generateRoadmapWithGemini({ careerTarget, skillProfile, analysis });
-  if (geminiRoadmap?.items?.length) {
-    return {
-      ...geminiRoadmap,
-      source: geminiRoadmap.source || "gemini",
-    };
+  try {
+    const geminiRoadmap = await generateRoadmapWithGemini({ careerTarget, skillProfile, analysis });
+    if (geminiRoadmap?.items?.length) {
+      return {
+        ...geminiRoadmap,
+        source: geminiRoadmap.source || "gemini",
+      };
+    }
+  } catch {
+    // Keep roadmap generation usable when the hosted AI endpoint is unavailable.
   }
 
   return buildLocalRoadmap({ careerTarget, analysis });

@@ -72,98 +72,112 @@ export function RoadmapPage() {
               ))}
             </section>
 
-            <section className="relative grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-x-gutter">
-              <div className="hidden md:block absolute left-1/2 -translate-x-1/2 h-full w-[2px] timeline-line top-4" />
-              {view.pathItems.map((item, index) => {
-                const left = index % 2 === 0;
-                const card = (
-                  <div className={`${left ? "md:text-right" : ""} mb-12`}>
-                    <article className={`${item.isActive ? "bg-surface-container" : "bg-surface-container-low"} p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors relative`}>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 ${item.isActive ? "bg-primary-container/10 text-primary border-primary/20" : "bg-secondary-container/20 text-on-secondary-container border-outline-variant"} border rounded-full mb-4`}>
-                        <Icon name={item.statusIcon} filled={item.isActive} className="text-[16px]" />
-                        <span className="font-label-sm text-label-sm">{item.statusLabel}</span>
-                      </div>
+            {view.hasNoGaps ? (
+              <section className="bg-surface-container border border-primary/20 rounded-xl p-lg mb-gutter">
+                <div className="flex items-start gap-sm">
+                  <Icon name="check_circle" className="text-primary mt-1" />
+                  <div>
+                    <h3 className="font-headline-md text-headline-md text-primary mb-xs">No roadmap items needed yet</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                      The current market evidence did not find a missing repeated skill for this target. Keep the CV evidence current, reload jobs later, or change the target role/location if you want a stricter comparison.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="relative grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-x-gutter">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 h-full w-[2px] timeline-line top-4" />
+                {view.pathItems.map((item, index) => {
+                  const left = index % 2 === 0;
+                  const card = (
+                    <div className={`${left ? "md:text-right" : ""} mb-12`}>
+                      <article className={`${item.isActive ? "bg-surface-container" : "bg-surface-container-low"} p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors relative`}>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 ${item.isActive ? "bg-primary-container/10 text-primary border-primary/20" : "bg-secondary-container/20 text-on-secondary-container border-outline-variant"} border rounded-full mb-4`}>
+                          <Icon name={item.statusIcon} filled={item.isActive} className="text-[16px]" />
+                          <span className="font-label-sm text-label-sm">{item.statusLabel}</span>
+                        </div>
 
-                      <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">
-                        {item.phase} | {item.skill}
-                      </p>
-                      <h3 className="font-headline-lg text-headline-lg text-on-surface mb-2">
-                        {item.title}
-                      </h3>
-                      <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-                        {item.what}
-                      </p>
+                        <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">
+                          {item.phase} | {item.skill}
+                        </p>
+                        <h3 className="font-headline-lg text-headline-lg text-on-surface mb-2">
+                          {item.title}
+                        </h3>
+                        <p className="font-body-md text-body-md text-on-surface-variant mb-md">
+                          {item.what}
+                        </p>
 
-                      {item.companyChips.length > 0 && (
-                        <div className={`flex flex-wrap gap-xs mb-md ${left ? "md:justify-end" : ""}`}>
-                          {item.companyChips.map((company) => (
-                            <span key={company} className="rounded-full bg-surface-container-highest border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
-                              {company}
-                            </span>
-                          ))}
-                          {item.extraCompanyCount > 0 && (
-                            <span className="rounded-full bg-primary/10 border border-primary/30 px-3 py-1 font-label-sm text-label-sm text-primary">
-                              +{item.extraCompanyCount} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="space-y-sm border-t border-outline-variant pt-md">
-                        <div>
-                          <span className="font-label-sm text-label-sm text-primary block mb-1">What</span>
-                          <p className="font-body-sm text-body-sm text-on-surface">{item.what}</p>
-                        </div>
-                        <div>
-                          <span className="font-label-sm text-label-sm text-primary block mb-1">Why</span>
-                          <p className="font-body-sm text-body-sm text-on-surface">{item.why}</p>
-                        </div>
-                        <div>
-                          <span className="font-label-sm text-label-sm text-primary block mb-1">When</span>
-                          <p className="font-body-sm text-body-sm text-on-surface">{item.when}</p>
-                        </div>
-                        {item.howToStart.length > 0 && (
-                          <div>
-                            <span className="font-label-sm text-label-sm text-primary block mb-1">How to start</span>
-                            <div className={`flex flex-wrap gap-xs ${left ? "md:justify-end" : ""}`}>
-                              {item.howToStart.map((task) => (
-                                <span key={task} className="rounded-lg bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
-                                  {task}
-                                </span>
-                              ))}
-                            </div>
+                        {item.companyChips.length > 0 && (
+                          <div className={`flex flex-wrap gap-xs mb-md ${left ? "md:justify-end" : ""}`}>
+                            {item.companyChips.map((company) => (
+                              <span key={company} className="rounded-full bg-surface-container-highest border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
+                                {company}
+                              </span>
+                            ))}
+                            {item.extraCompanyCount > 0 && (
+                              <span className="rounded-full bg-primary/10 border border-primary/30 px-3 py-1 font-label-sm text-label-sm text-primary">
+                                +{item.extraCompanyCount} more
+                              </span>
+                            )}
                           </div>
                         )}
-                        <div>
-                          <span className="font-label-sm text-label-sm text-primary block mb-1">CV proof</span>
-                          <p className="font-body-sm text-body-sm text-on-surface">{item.successCriteria}</p>
+
+                        <div className="space-y-sm border-t border-outline-variant pt-md">
+                          <div>
+                            <span className="font-label-sm text-label-sm text-primary block mb-1">What</span>
+                            <p className="font-body-sm text-body-sm text-on-surface">{item.what}</p>
+                          </div>
+                          <div>
+                            <span className="font-label-sm text-label-sm text-primary block mb-1">Why</span>
+                            <p className="font-body-sm text-body-sm text-on-surface">{item.why}</p>
+                          </div>
+                          <div>
+                            <span className="font-label-sm text-label-sm text-primary block mb-1">When</span>
+                            <p className="font-body-sm text-body-sm text-on-surface">{item.when}</p>
+                          </div>
+                          {item.howToStart.length > 0 && (
+                            <div>
+                              <span className="font-label-sm text-label-sm text-primary block mb-1">How to start</span>
+                              <div className={`flex flex-wrap gap-xs ${left ? "md:justify-end" : ""}`}>
+                                {item.howToStart.map((task) => (
+                                  <span key={task} className="rounded-lg bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
+                                    {task}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-label-sm text-label-sm text-primary block mb-1">CV proof</span>
+                            <p className="font-body-sm text-body-sm text-on-surface">{item.successCriteria}</p>
+                          </div>
+                          <p className="inline-flex items-center gap-xs text-primary font-label-md text-label-md">
+                            <Icon name="link" className="text-[18px]" />
+                            {item.resource}
+                          </p>
                         </div>
-                        <p className="inline-flex items-center gap-xs text-primary font-label-md text-label-md">
-                          <Icon name="link" className="text-[18px]" />
-                          {item.resource}
-                        </p>
-                      </div>
 
-                      <div className={`hidden md:block absolute top-8 ${left ? "-right-[36px]" : "-left-[36px]"} w-4 h-4 ${item.isActive ? "bg-primary" : "bg-outline-variant"} rounded-full border-4 border-surface z-10`} />
-                    </article>
-                  </div>
-                );
+                        <div className={`hidden md:block absolute top-8 ${left ? "-right-[36px]" : "-left-[36px]"} w-4 h-4 ${item.isActive ? "bg-primary" : "bg-outline-variant"} rounded-full border-4 border-surface z-10`} />
+                      </article>
+                    </div>
+                  );
 
-                return left ? (
-                  <div key={`${item.stepLabel}-${item.title}`} className="contents">
-                    {card}
-                    <div className="hidden md:block" />
-                    <div className="hidden md:block" />
-                  </div>
-                ) : (
-                  <div key={`${item.stepLabel}-${item.title}`} className="contents">
-                    <div className="hidden md:block" />
-                    <div className="hidden md:block" />
-                    {card}
-                  </div>
-                );
-              })}
-            </section>
+                  return left ? (
+                    <div key={`${item.stepLabel}-${item.title}`} className="contents">
+                      {card}
+                      <div className="hidden md:block" />
+                      <div className="hidden md:block" />
+                    </div>
+                  ) : (
+                    <div key={`${item.stepLabel}-${item.title}`} className="contents">
+                      <div className="hidden md:block" />
+                      <div className="hidden md:block" />
+                      {card}
+                    </div>
+                  );
+                })}
+              </section>
+            )}
 
             <section className="mt-4 bg-surface-container-high rounded-xl p-md border border-primary/20">
               <div className="flex items-start gap-sm">

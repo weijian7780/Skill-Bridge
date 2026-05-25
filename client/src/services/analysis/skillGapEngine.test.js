@@ -13,7 +13,7 @@ test("compares confirmed CV skills against live market job skills", () => {
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["Python", "SQL", "Excel"],
       softSkills: ["Communication"],
       confidence: 0.82,
@@ -21,10 +21,12 @@ test("compares confirmed CV skills against live market job skills", () => {
     jobs: [
       {
         title: "Junior Data Analyst",
+        location: "Sabah, Malaysia",
         extractedSkills: ["SQL", "Power BI"],
       },
       {
         title: "BI Analyst",
+        location: "Sabah, Malaysia",
         extractedSkills: ["Power BI", "Tableau"],
       },
     ],
@@ -50,7 +52,7 @@ test("requires live market jobs before calculating the skill gap", () => {
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["Python", "SQL", "Excel"],
     },
     jobs: [],
@@ -77,6 +79,7 @@ test("requires a confirmed latest CV before analysis is ready", () => {
     jobs: [
       {
         title: "Junior Data Analyst",
+        location: "Sabah, Malaysia",
         extractedSkills: ["SQL", "Power BI"],
       },
     ],
@@ -100,7 +103,7 @@ test("matches equivalent CV and market skill names", () => {
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["Data Analysis", "PowerBI"],
     },
     jobs: [
@@ -127,7 +130,7 @@ test("keeps per-company job requirement matches as market evidence", () => {
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["SQL", "Data Analysis"],
     },
     jobs: [
@@ -176,7 +179,7 @@ test("does not score a company match when no job requirements are detected", () 
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["SQL"],
     },
     jobs: [
@@ -204,7 +207,7 @@ test("counts only relevant job postings with detected company requirements", () 
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["SQL"],
     },
     jobs: [
@@ -243,7 +246,7 @@ test("excludes company postings that do not match the current career target role
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["Figma", "SQL"],
     },
     jobs: [
@@ -275,6 +278,50 @@ test("excludes company postings that do not match the current career target role
   assert.deepEqual(analysis.missingSkills, ["Power BI"]);
 });
 
+test("excludes company postings outside the selected target industry", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      industry: "finance",
+      region: "Malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["SQL"],
+    },
+    jobs: [
+      {
+        id: "finance-data-analyst",
+        title: "Finance Data Analyst",
+        company: "Bank Analytics",
+        location: "Malaysia",
+        description: "Build reporting for banking and financial operations.",
+        extractedSkills: ["SQL", "Power BI"],
+      },
+      {
+        id: "marketing-data-analyst",
+        title: "Marketing Data Analyst",
+        company: "Campaign Studio",
+        location: "Malaysia",
+        description: "Build campaign dashboards and social media performance reports.",
+        extractedSkills: ["SQL", "Tableau"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.marketEvidence.rawJobCount, 2);
+  assert.equal(analysis.marketEvidence.excludedJobCount, 1);
+  assert.deepEqual(
+    analysis.marketEvidence.jobMatches.map((job) => job.id),
+    ["finance-data-analyst"],
+  );
+  assert.deepEqual(analysis.missingSkills, ["Power BI"]);
+});
+
 test("uses the same resume skills against a different career target to find different related companies", () => {
   const uiUxAnalysis = buildSkillGapAnalysis({
     careerTarget: {
@@ -285,7 +332,7 @@ test("uses the same resume skills against a different career target to find diff
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["Figma", "SQL"],
     },
     jobs: [
@@ -315,6 +362,144 @@ test("uses the same resume skills against a different career target to find diff
   assert.deepEqual(uiUxAnalysis.missingSkills, []);
 });
 
+test("shows missing UI/UX hard skills when the CV only matches Figma", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "UI/UX Designer",
+      industry: "data-it",
+      region: "all-malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.webp",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["Figma", "Adobe XD", "Sketch", "InVision", "Photoshop"],
+      softSkills: [],
+      certifications: [],
+    },
+    jobs: [
+      {
+        id: "two95-uiux",
+        title: "Mid level and senior UI/UX Designer locals and expats available in Malaysia",
+        company: "TWO95 International, Inc",
+        location: "Malaysia",
+        source: "Jooble",
+        extractedSkills: [
+          "Figma",
+          "FigJam",
+          "Miro",
+          "Google Suite",
+          "Slack",
+          "UI/UX Principles",
+          "UI/UX Guidelines",
+          "UI/UX Best Practices",
+        ],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.readinessScore, 13);
+  assert.deepEqual(analysis.matchedSkills, ["Figma"]);
+  assert.deepEqual(analysis.missingSkills, [
+    "FigJam",
+    "Google Suite",
+    "Miro",
+    "Slack",
+    "UI/UX Best Practices",
+    "UI/UX Guidelines",
+    "UI/UX Principles",
+  ]);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0].missingSkills, [
+    "FigJam",
+    "Miro",
+    "Google Suite",
+    "Slack",
+    "UI/UX Principles",
+    "UI/UX Guidelines",
+    "UI/UX Best Practices",
+  ]);
+});
+
+test("scores job gaps from structured hard skills and tools only", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Architect",
+      region: "kuala-lumpur",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["Kafka"],
+      softSkills: ["Communication"],
+      certifications: ["TOGAF"],
+    },
+    jobs: [
+      {
+        id: "data-architect",
+        title: "Data Architect",
+        company: "Axiata",
+        location: "Kuala Lumpur, Malaysia",
+        extractedSkills: ["Legacy Snippet Skill", "Communication", "TOGAF"],
+        requirements: {
+          hardSkills: ["Data Governance"],
+          tools: ["Kafka"],
+          softSkills: ["Communication"],
+          certifications: ["TOGAF"],
+          partialRequirements: false,
+        },
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.readinessScore, 50);
+  assert.deepEqual(analysis.matchedSkills, ["Kafka"]);
+  assert.deepEqual(analysis.missingSkills, ["Data Governance"]);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0].requiredSkills, ["Data Governance", "Kafka"]);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0].matchedSkills, ["Kafka"]);
+  assert.deepEqual(analysis.marketEvidence.jobMatches[0].missingSkills, ["Data Governance"]);
+});
+
+test("keeps snippet-only job requirements as partial market evidence", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "UI/UX Designer",
+      region: "all-malaysia",
+    },
+    cvDocument: {
+      fileName: "latest-cv.webp",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["Figma"],
+    },
+    jobs: [
+      {
+        id: "snippet-only-uiux",
+        title: "UI/UX Designer",
+        company: "TWO95 International, Inc",
+        location: "Malaysia",
+        requirements: {
+          hardSkills: ["UI/UX Best Practices"],
+          tools: ["Figma", "Miro"],
+          partialRequirements: true,
+        },
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.marketEvidence.partialJobCount, 1);
+  assert.equal(analysis.marketEvidence.jobMatches[0].partialRequirements, true);
+  assert.equal(analysis.marketEvidence.jobMatches[0].matchLabel, "partial match");
+  assert.deepEqual(analysis.matchedSkills, ["Figma"]);
+  assert.deepEqual(analysis.missingSkills, ["Miro", "UI/UX Best Practices"]);
+});
+
 test("recalculates market gaps when the confirmed resume skills change", () => {
   const careerTarget = {
     role: "Data Analyst",
@@ -337,7 +522,7 @@ test("recalculates market gaps when the confirmed resume skills change", () => {
     careerTarget,
     cvDocument,
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["SQL"],
     },
     jobs,
@@ -346,7 +531,7 @@ test("recalculates market gaps when the confirmed resume skills change", () => {
     careerTarget,
     cvDocument,
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["SQL", "Power BI", "Excel"],
     },
     jobs,
@@ -370,7 +555,7 @@ test("ranks relevant company requirements by job match percentage then matched s
       fileName: "latest-cv.pdf",
     },
     skillProfile: {
-      provider: "Gemini 2.5 Flash",
+    provider: "Gemini",
       technicalSkills: ["SQL", "Excel", "Python", "Data Analytics"],
     },
     jobs: [
@@ -422,4 +607,44 @@ test("ranks relevant company requirements by job match percentage then matched s
   assert.deepEqual(analysis.marketEvidence.jobMatches[0].missingSkills, []);
   assert.equal(analysis.marketEvidence.jobMatches[0].matchScore, 100);
   assert.equal(analysis.marketEvidence.jobMatches[3].matchScore, 0);
+});
+
+test("excludes stale company matches outside the selected target region", () => {
+  const analysis = buildSkillGapAnalysis({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "kuala-lumpur",
+    },
+    cvDocument: {
+      fileName: "latest-cv.pdf",
+    },
+    skillProfile: {
+      provider: "Gemini",
+      technicalSkills: ["SQL"],
+    },
+    jobs: [
+      {
+        id: "old-penang-result",
+        title: "Data Analyst",
+        company: "TWO95 International",
+        location: "Penang, Malaysia",
+        extractedSkills: ["SQL", "Power BI"],
+      },
+      {
+        id: "current-kl-result",
+        title: "Data Analyst",
+        company: "KL Analytics",
+        location: "Kuala Lumpur, Malaysia",
+        extractedSkills: ["SQL", "Tableau"],
+      },
+    ],
+  });
+
+  assert.equal(analysis.status, "ready");
+  assert.equal(analysis.marketEvidence.excludedJobCount, 1);
+  assert.deepEqual(
+    analysis.marketEvidence.jobMatches.map((job) => job.company),
+    ["KL Analytics"],
+  );
+  assert.deepEqual(analysis.missingSkills, ["Tableau"]);
 });

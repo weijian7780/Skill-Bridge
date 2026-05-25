@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { parseCvBuffer } from "../services/cvParser.js";
-import { extractCvImageTextWithGemini } from "../services/llm/geminiVisionClient.js";
+import { extractCvImageTextWithGemini } from "../services/llm/geminiClient.js";
 import { extractSkillProfile } from "../services/llm/skillExtractionRouter.js";
 
 const upload = multer({

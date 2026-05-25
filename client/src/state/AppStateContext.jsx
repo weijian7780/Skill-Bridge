@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { buildSkillGapAnalysis } from "../services/analysis/skillGapEngine.js";
+import { normaliseIndustryId } from "../services/career/industryOptions.js";
 import { normaliseRegionId } from "../services/career/regionOptions.js";
 import {
   buildStudentProfileSnapshot,
@@ -12,9 +13,8 @@ const AppStateContext = createContext(null);
 
 const initialTarget = {
   role: "Data Analyst",
-  industry: "Data / IT",
+  industry: "data-it",
   region: "all-malaysia",
-  companyTypes: ["MNC", "Startup", "GLC"],
 };
 
 const initialSkillProfile = {
@@ -22,7 +22,7 @@ const initialSkillProfile = {
   technicalSkills: [],
   softSkills: [],
   certifications: [],
-  education: "UMS Year 3 Computer Science",
+  education: "",
   confidence: 0,
   warnings: [],
 };
@@ -31,9 +31,8 @@ function toCareerTarget(snapshot) {
   const target = snapshot?.career_target ?? {};
   return {
     role: target.role ?? initialTarget.role,
-    industry: target.industry ?? initialTarget.industry,
+    industry: normaliseIndustryId(target.industry ?? initialTarget.industry),
     region: normaliseRegionId(target.region ?? initialTarget.region),
-    companyTypes: target.company_types ?? target.companyTypes ?? initialTarget.companyTypes,
   };
 }
 
@@ -65,12 +64,26 @@ function toCvDocument(snapshot) {
   };
 }
 
+function calculateRoadmapProgress(roadmap = []) {
+  if (roadmap.length === 0) {
+    return 0;
+  }
+
+  const completedCount = roadmap.filter((item) => {
+    const status = String(item.status || "").toLowerCase();
+    return status === "completed" || status === "done";
+  }).length;
+
+  return Math.round((completedCount / roadmap.length) * 100);
+}
+
 export function AppStateProvider({ children }) {
-  const { session, supabaseConnection } = useAuth();
-  const [careerTarget, setCareerTarget] = useState(initialTarget);
+  const { expireSession, session, supabaseConnection } = useAuth();
+  const [careerTarget, setCareerTargetState] = useState(initialTarget);
   const [skillProfile, setSkillProfile] = useState(initialSkillProfile);
   const [cvDocument, setCvDocument] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [loadedJobTargetKey, setLoadedJobTargetKey] = useState("");
   const [jobStatus, setJobStatus] = useState("Job API key not configured");
   const [roadmapPlan, setRoadmapPlan] = useState(null);
   const [syncStatus, setSyncStatus] = useState("Sign in to sync profile data.");
@@ -110,17 +123,21 @@ export function AppStateProvider({ children }) {
       }
 
       if (result.ok && result.snapshot) {
-        setCareerTarget(toCareerTarget(result.snapshot));
+        setCareerTargetState(toCareerTarget(result.snapshot));
         setSkillProfile(toSkillProfile(result.snapshot));
         setCvDocument(toCvDocument(result.snapshot));
         setSyncStatus("Supabase profile loaded.");
+        setLoadedProfileFor(userId);
       } else if (result.ok) {
         setSyncStatus("No Supabase profile yet. New profile will be saved after changes.");
+        setLoadedProfileFor(userId);
       } else {
+        setLoadedProfileFor("");
         setSyncStatus(result.reason);
+        if (result.authExpired) {
+          expireSession(result.reason);
+        }
       }
-
-      setLoadedProfileFor(userId);
     }
 
     loadSnapshot();
@@ -128,7 +145,7 @@ export function AppStateProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.id, supabaseConnection.client, supabaseConnection.configured]);
+  }, [expireSession, session?.user?.id, supabaseConnection.client, supabaseConnection.configured]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -146,6 +163,8 @@ export function AppStateProvider({ children }) {
         missingSkills,
         roadmap,
         cvDocument,
+        readinessScore: analysis.readinessScore,
+        roadmapProgress: calculateRoadmapProgress(roadmap),
       });
 
       const result = await saveStudentProfileSnapshot({
@@ -154,7 +173,15 @@ export function AppStateProvider({ children }) {
       });
 
       if (!cancelled) {
-        setSyncStatus(result.ok ? "Supabase profile saved." : result.reason);
+        if (result.ok) {
+          setSyncStatus("Supabase profile saved.");
+        } else {
+          setSyncStatus(result.reason);
+          if (result.authExpired) {
+            setLoadedProfileFor("");
+            expireSession(result.reason);
+          }
+        }
       }
     }
 
@@ -169,11 +196,21 @@ export function AppStateProvider({ children }) {
     loadedProfileFor,
     missingSkills,
     roadmap,
+    analysis.readinessScore,
+    expireSession,
     session?.user?.id,
     skillProfile,
     supabaseConnection.client,
     supabaseConnection.configured,
   ]);
+
+  function setCareerTarget(nextTarget) {
+    setCareerTargetState(nextTarget);
+    setJobs([]);
+    setLoadedJobTargetKey("");
+    setRoadmapPlan(null);
+    setJobStatus("Career target changed. Open Analysis to load matching market jobs.");
+  }
 
   const value = {
     careerTarget,
@@ -184,6 +221,8 @@ export function AppStateProvider({ children }) {
     setSkillProfile,
     jobs,
     setJobs,
+    loadedJobTargetKey,
+    setLoadedJobTargetKey,
     jobStatus,
     setJobStatus,
     analysis,

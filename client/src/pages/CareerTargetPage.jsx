@@ -1,25 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { industryOptions } from "../services/career/industryOptions.js";
 import { regionOptions } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 
-const companyOptions = ["MNC", "Startup", "GLC", "SME"];
-
 export function CareerTargetPage() {
-  const { careerTarget, setCareerTarget } = useAppState();
+  const { careerTarget, setCareerTarget, skillProfile } = useAppState();
   const [draft, setDraft] = useState(careerTarget);
+  const navigate = useNavigate();
+  const suggestedRole = suggestTargetRole({ careerTarget, skillProfile });
 
-  function toggleCompany(type) {
-    setDraft((current) => {
-      const hasType = current.companyTypes.includes(type);
-      return {
-        ...current,
-        companyTypes: hasType
-          ? current.companyTypes.filter((item) => item !== type)
-          : [...current.companyTypes, type],
-      };
+  useEffect(() => {
+    setDraft(careerTarget);
+  }, [careerTarget]);
+
+  function saveTarget(event) {
+    event.preventDefault();
+    setCareerTarget({
+      ...draft,
+      role: draft.role.trim() || careerTarget.role,
     });
+    navigate("/analysis");
+  }
+
+  function applySuggestion() {
+    if (!suggestedRole) {
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      role: suggestedRole,
+    }));
   }
 
   return (
@@ -46,7 +60,7 @@ export function CareerTargetPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
           <section className="md:col-span-8 bg-surface-container border border-outline-variant rounded-xl p-md md:p-lg">
-            <form className="space-y-8" onSubmit={(event) => { event.preventDefault(); setCareerTarget(draft); }}>
+            <form className="space-y-8" onSubmit={saveTarget}>
               <div className="space-y-2">
                 <label className="block font-label-md text-label-md text-on-surface-variant" htmlFor="target-role">Target Role</label>
                 <div className="relative">
@@ -58,10 +72,9 @@ export function CareerTargetPage() {
                 <div className="space-y-2">
                   <label className="block font-label-md text-label-md text-on-surface-variant" htmlFor="industry">Industry</label>
                   <select className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-all" id="industry" value={draft.industry} onChange={(event) => setDraft({ ...draft, industry: event.target.value })}>
-                    <option>Data / IT</option>
-                    <option>Finance</option>
-                    <option>Marketing</option>
-                    <option>Engineering</option>
+                    {industryOptions.map((industry) => (
+                      <option key={industry.id} value={industry.id}>{industry.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -71,20 +84,6 @@ export function CareerTargetPage() {
                       <option key={region.id} value={region.id}>{region.label}</option>
                     ))}
                   </select>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <span className="block font-label-md text-label-md text-on-surface-variant">Company Type Preference</span>
-                <div className="flex flex-wrap gap-3">
-                  {companyOptions.map((type) => {
-                    const selected = draft.companyTypes.includes(type);
-                    return (
-                      <button key={type} className={`flex items-center gap-2 px-6 py-3 rounded-full border bg-surface-container-lowest font-label-md text-label-md hover:border-primary transition-all active:scale-95 ${selected ? "border-primary text-primary" : "border-outline-variant text-on-surface"}`} onClick={() => toggleCompany(type)} type="button">
-                        <Icon name={type === "MNC" ? "corporate_fare" : type === "Startup" ? "rocket_launch" : type === "GLC" ? "account_balance" : "store"} className="text-[18px]" />
-                        {type}
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
               <div className="pt-6">
@@ -102,15 +101,22 @@ export function CareerTargetPage() {
                   <Icon name="auto_awesome" filled />
                 </div>
                 <div>
-                  <h3 className="font-headline-md text-headline-md text-primary">AI Suggestion</h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Sourced from your current profile</p>
+                  <h3 className="font-headline-md text-headline-md text-primary">Profile Suggestion</h3>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Sourced from confirmed CV skills</p>
                 </div>
               </div>
               <p className="font-body-md text-body-md text-on-surface mb-6 italic">
-                "Based on your profile, <span className="text-primary font-bold">Business Intelligence Intern</span> is also a good match."
+                {suggestedRole
+                  ? <>Based on your confirmed CV skills, <span className="text-primary font-bold">{suggestedRole}</span> is also a possible target.</>
+                  : "Confirm a latest CV before SkillBridge suggests another target role."}
               </p>
-              <button className="w-full border border-primary text-primary font-label-md text-label-md py-3 rounded-lg hover:bg-primary/5 transition-colors active:scale-95">
-                Add to Targets
+              <button
+                className="w-full border border-primary text-primary font-label-md text-label-md py-3 rounded-lg hover:bg-primary/5 transition-colors active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!suggestedRole}
+                onClick={applySuggestion}
+                type="button"
+              >
+                Apply Suggestion
               </button>
             </div>
             <div className="bg-surface-container border border-outline-variant rounded-xl p-md">
@@ -129,4 +135,49 @@ export function CareerTargetPage() {
       </main>
     </PageShell>
   );
+}
+
+function suggestTargetRole({ careerTarget, skillProfile }) {
+  if (!skillProfile || skillProfile.provider === "Not extracted yet") {
+    return "";
+  }
+
+  const profileText = [
+    ...(skillProfile.technicalSkills ?? []),
+    ...(skillProfile.softSkills ?? []),
+    ...(skillProfile.certifications ?? []),
+    skillProfile.education ?? "",
+  ].join(" ").toLowerCase();
+  const currentRole = String(careerTarget?.role || "").toLowerCase();
+
+  if (!profileText.trim()) {
+    return "";
+  }
+
+  if (
+    containsAny(profileText, ["figma", "adobe xd", "sketch", "invision", "user research", "ux design"]) &&
+    !containsAny(currentRole, ["ui", "ux", "designer"])
+  ) {
+    return "UI/UX Designer";
+  }
+
+  if (
+    containsAny(profileText, ["power bi", "business intelligence", "dashboard", "sql"]) &&
+    !containsAny(currentRole, ["business intelligence", "bi analyst"])
+  ) {
+    return "Business Intelligence Analyst";
+  }
+
+  if (
+    containsAny(profileText, ["react", "javascript", "typescript", "frontend"]) &&
+    !containsAny(currentRole, ["frontend", "front end"])
+  ) {
+    return "Frontend Developer";
+  }
+
+  return "";
+}
+
+function containsAny(text, fragments) {
+  return fragments.some((fragment) => text.includes(fragment));
 }

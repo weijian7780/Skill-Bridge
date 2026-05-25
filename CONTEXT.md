@@ -6,7 +6,7 @@
 Career-readiness application for Malaysian undergraduates. The first MVP focuses on UMS students preparing for entry-level Data Analyst roles.
 
 ### Career Target
-The role, industry, region, and company preference selected by the user. It drives job search, skill-gap analysis, and roadmap generation.
+The role, industry, and region selected by the user. It drives job search, skill-gap analysis, and roadmap generation.
 
 ### CV Document
 The PDF, DOCX, JPG, PNG, or WebP uploaded by the user. The server extracts readable text from the document or image before any skill extraction runs.
@@ -15,13 +15,13 @@ The PDF, DOCX, JPG, PNG, or WebP uploaded by the user. The server extracts reada
 The single current CV used for SkillBridge analysis. A new upload replaces the previous CV metadata and Extracted Skill Profile in the Profile Snapshot.
 
 ### Extracted Skill Profile
-Structured skills and profile facts derived from a CV Document. V1 uses Gemini 2.5 Flash first and a local rule-based extractor as the fallback.
+Structured skills and profile facts derived from a CV Document. V1 uses Gemini first and a local rule-based extractor as the fallback for text CVs.
 
 ### Job Search Provider
-The source used to retrieve job postings. V1 uses Jooble first with Careerjet as an optional fallback. LinkedIn, JobStreet, and Glassdoor scraping are excluded.
+The source used to retrieve job postings. V1 uses Jooble only. LinkedIn, JobStreet, Glassdoor, and Careerjet are excluded from the runtime provider path.
 
 ### Job Requirement Profile
-Skills and requirements extracted from job posting text. It is compared with the Extracted Skill Profile.
+Structured requirements extracted from job posting text. V1 separates hard skills, tools, and soft skills. Skill-gap scoring uses hard skills and tools only; soft skills are supporting evidence and certifications are excluded from V1 gap scoring.
 
 ### Skill Gap
 A missing or weak skill required by the Career Target or Job Requirement Profile.
@@ -45,7 +45,7 @@ The process of loading a Profile Snapshot after login and saving app-state chang
 The geographic job market used for company requirement comparison. SkillBridge focuses on Malaysia first, including all Malaysia and Malaysian state or federal territory options.
 
 ### Company Requirement
-A skill or requirement detected from a job posting for the student's Career Target.
+A hard skill or tool detected from a job posting for the student's Career Target. Soft skills and certifications are not Company Requirements for V1 scoring.
 
 ### Company Requirement Match
 A comparison between one job posting's Company Requirements and the student's confirmed resume skills.
@@ -58,6 +58,9 @@ A Company Requirement that is also found in the student's confirmed resume skill
 
 ### Missing Skill
 A Company Requirement that is not found in the student's confirmed resume skills.
+
+### Partial Requirement Evidence
+A job posting whose requirements were extracted from a short provider snippet instead of a fuller job description. It can be included in Analysis, but its match score must be labelled as partial.
 
 ### Market Match Score
 The percentage of a job posting's detected Company Requirements that are Matched Skills.
@@ -73,9 +76,10 @@ A Missing Skill selected for future learning recommendations by combining patter
 - Build a real full-stack web app, not a static Stitch export.
 - Use `client/` for React and `server/` for Express.
 - Use real PDF/DOCX parsing and Gemini vision OCR for CV image uploads.
-- Use Gemini 2.5 Flash as the primary LLM extractor.
-- Use local rule-based extraction as the fallback if Gemini is missing or unavailable.
-- Use Jooble first for job data in V1, with Careerjet retained as a fallback provider.
+- Use Gemini as the primary CV skill extractor and roadmap generator.
+- Use Gemini as the primary job requirement extractor when Jooble provides job text.
+- Use local rule-based extraction as the fallback if Gemini is missing or unavailable for text CVs.
+- Use Jooble for job data in V1.
 - Add Supabase after screens and core flow work.
 - Use Supabase Auth for real email/password login, Google OAuth redirect, and RLS-backed profile persistence.
 - Use latest-CV only for V1. CV History is excluded until the app needs document versioning.
