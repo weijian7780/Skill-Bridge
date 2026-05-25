@@ -16,6 +16,30 @@ test("builds a stable cache key from provider, role, and location", () => {
   );
 });
 
+test("defaults Supabase job cache keys to Jooble when no provider override is configured", async () => {
+  const calls = [];
+  const cache = createSupabaseJobCache({
+    env: {
+      SUPABASE_URL: "https://project.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+    },
+    fetchImpl: async (url, options) => {
+      calls.push({ url: String(url), options });
+      return jsonResponse([]);
+    },
+  });
+
+  const result = await cache.get({
+    role: "Azure Devops Engineer",
+    industry: "data-it",
+    location: "Malaysia",
+  });
+
+  assert.equal(result.hit, false);
+  assert.equal(result.cacheKey, "jooble|job-requirements-v1|data-it|azure devops engineer|malaysia");
+  assert.match(calls[0].url, /cache_key=eq\.jooble%7Cjob-requirements-v1%7Cdata-it%7Cazure\+devops\+engineer%7Cmalaysia/);
+});
+
 test("loads a valid cached Supabase job search result", async () => {
   const calls = [];
   const cache = createSupabaseJobCache({

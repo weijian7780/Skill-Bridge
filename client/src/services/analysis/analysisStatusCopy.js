@@ -38,6 +38,10 @@ export function buildAnalysisActionLabel({ analysisStatus, jobStatus }) {
   return "Load Jobs";
 }
 
+export function buildMarketRefreshActionLabel({ analysisStatus }) {
+  return analysisStatus === "ready" ? "Refresh Market Jobs" : "Reload Jobs";
+}
+
 function buildMarketUnavailableMessage(jobStatus = "") {
   if (/failed to fetch/i.test(jobStatus)) {
     return "Job-market data is unavailable because the local API server cannot be reached. Start the server on port 4000.";

@@ -4,8 +4,9 @@ export async function searchMarketJobsWithCache({
   searchContext,
   cache,
   searcher = searchMarketJobs,
+  forceRefresh = false,
 }) {
-  const cachedResult = cache ? await cache.get(searchContext) : null;
+  const cachedResult = cache && !forceRefresh ? await cache.get(searchContext) : null;
 
   if (cachedResult?.hit && cachedResult.result) {
     return {
@@ -20,7 +21,7 @@ export async function searchMarketJobsWithCache({
   const providerResult = await searcher(searchContext);
   const cacheMetadata = {
     cached: false,
-    cacheStatus: cachedResult?.cacheKey ? "miss" : "disabled",
+    cacheStatus: forceRefresh ? "refresh" : cachedResult?.cacheKey ? "miss" : "disabled",
     cacheKey: cachedResult?.cacheKey || "",
     cacheExpiresAt: "",
   };
@@ -37,7 +38,11 @@ export async function searchMarketJobsWithCache({
     return {
       ...providerResult,
       ...cacheMetadata,
-      cacheStatus: writeResult?.reason ? "write_failed" : cacheMetadata.cacheStatus,
+      cacheStatus: writeResult?.reason
+        ? forceRefresh
+          ? "refresh_write_failed"
+          : "write_failed"
+        : cacheMetadata.cacheStatus,
       cacheReason: writeResult?.reason || "",
     };
   }
@@ -45,7 +50,7 @@ export async function searchMarketJobsWithCache({
   return {
     ...providerResult,
     cached: false,
-    cacheStatus: "stored",
+    cacheStatus: forceRefresh ? "refreshed" : "stored",
     cacheKey: writeResult.cacheKey || cacheMetadata.cacheKey,
     cacheExpiresAt: writeResult.expiresAt || "",
   };

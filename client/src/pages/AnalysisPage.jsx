@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
-import { buildAnalysisActionLabel } from "../services/analysis/analysisStatusCopy.js";
+import {
+  buildAnalysisActionLabel,
+  buildMarketRefreshActionLabel,
+} from "../services/analysis/analysisStatusCopy.js";
 import {
   buildDiagnosticScoreDisplay,
   buildSkillEvidenceRows,
@@ -59,6 +62,10 @@ export function AnalysisPage() {
   const hasLoadedProviderJobs = (analysis.marketEvidence.rawJobCount ?? 0) > 0;
   const hasLoadedUnusableMarketJobs = analysis.status === "needs_market" && hasLoadedProviderJobs;
   const actionLabel = buildAnalysisActionLabel({
+    analysisStatus: analysis.status,
+    jobStatus,
+  });
+  const refreshActionLabel = buildMarketRefreshActionLabel({
     analysisStatus: analysis.status,
     jobStatus,
   });
@@ -167,7 +174,8 @@ export function AnalysisPage() {
         const result = await searchMarketJobs({
           role: careerTarget.role,
           industry: careerTarget.industry,
-          region: regionSearchValue,
+          region: careerTarget.region,
+          forceRefresh: jobSearchAttempt > 0,
         });
 
         if (cancelled) {
@@ -299,7 +307,7 @@ export function AnalysisPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-8 flex justify-end">
+            <div className="mt-8 flex flex-col sm:flex-row justify-end gap-sm">
               {analysis.status === "needs_market" ? (
                 <button
                   className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-primary"
@@ -310,19 +318,30 @@ export function AnalysisPage() {
                   {actionLabel}
                 </button>
               ) : analysis.status === "ready" ? (
-                <button
-                  className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isGeneratingRoadmap}
-                  onClick={generateRoadmap}
-                  type="button"
-                >
-                  {isGeneratingRoadmap
-                    ? "Generating Roadmap..."
-                    : missingSkills.length === 0
-                      ? "Review No-Gap Result"
-                      : "Build Roadmap From These Gaps"}
-                  <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
-                </button>
+                <>
+                  <button
+                    className="border border-primary text-primary hover:bg-primary/10 px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isGeneratingRoadmap}
+                    onClick={retryJobSearch}
+                    type="button"
+                  >
+                    <Icon name="refresh" />
+                    {refreshActionLabel}
+                  </button>
+                  <button
+                    className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center justify-center gap-2 group disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isGeneratingRoadmap}
+                    onClick={generateRoadmap}
+                    type="button"
+                  >
+                    {isGeneratingRoadmap
+                      ? "Generating Roadmap..."
+                      : missingSkills.length === 0
+                        ? "Review No-Gap Result"
+                        : "Build Roadmap From These Gaps"}
+                    <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </>
               ) : (
                 <Link className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 group" to={isReady ? "/roadmap" : "/cv"}>
                   {actionLabel}

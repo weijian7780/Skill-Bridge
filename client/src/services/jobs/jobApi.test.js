@@ -43,3 +43,15 @@ test("includes selected industry in the job search URL", () => {
     "/jobs/search?role=Data+Analyst&location=Malaysia&industry=finance",
   );
 });
+
+test("adds cache-bypass refresh flag for manual market job refresh", () => {
+  assert.equal(
+    buildMarketJobSearchPath({
+      role: "Azure Devops Engineer",
+      region: "all-malaysia",
+      industry: "data-it",
+      forceRefresh: true,
+    }),
+    "/jobs/search?role=Azure+Devops+Engineer&location=Malaysia&industry=data-it&refresh=true",
+  );
+});

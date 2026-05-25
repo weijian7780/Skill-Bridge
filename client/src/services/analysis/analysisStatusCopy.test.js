@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildAnalysisActionLabel, buildAnalysisScoreMessage } from "./analysisStatusCopy.js";
+import {
+  buildAnalysisActionLabel,
+  buildAnalysisScoreMessage,
+  buildMarketRefreshActionLabel,
+} from "./analysisStatusCopy.js";
 
 test("explains that job API rejection blocks real score calculation", () => {
   const message = buildAnalysisScoreMessage({
@@ -56,5 +60,15 @@ test("uses a command label before the first market job search", () => {
       jobStatus: "Career target changed. Open Analysis to load matching market jobs.",
     }),
     "Load Jobs",
+  );
+});
+
+test("labels ready analysis market refresh as a cache-bypassing refresh action", () => {
+  assert.equal(
+    buildMarketRefreshActionLabel({
+      analysisStatus: "ready",
+      jobStatus: "Loaded 10 cached Jooble jobs for this target.",
+    }),
+    "Refresh Market Jobs",
   );
 });

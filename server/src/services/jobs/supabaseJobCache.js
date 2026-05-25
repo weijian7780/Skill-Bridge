@@ -156,7 +156,7 @@ export function createSupabaseJobCache({
 function readJobCacheConfig(env) {
   const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL || "";
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_KEY || "";
-  const provider = env.JOB_PROVIDER || "auto";
+  const provider = env.JOB_PROVIDER || "jooble";
   const version = env.JOB_SKILL_EXTRACTOR_VERSION || DEFAULT_SKILL_EXTRACTOR_VERSION;
   const ttlMinutes = Number.parseInt(env.JOB_CACHE_TTL_MINUTES || "", 10) || DEFAULT_CACHE_TTL_MINUTES;
   const enabled = String(env.JOB_CACHE_ENABLED ?? "true").toLowerCase() !== "false";

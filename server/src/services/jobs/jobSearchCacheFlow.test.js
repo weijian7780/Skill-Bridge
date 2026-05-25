@@ -85,6 +85,55 @@ test("stores successful market job provider results after a cache miss", async (
   assert.equal(writes[0].providerResult.jobs[0].id, "live-job");
 });
 
+test("refreshes market jobs by bypassing a cached result and storing the live result", async () => {
+  let reads = 0;
+  const writes = [];
+  const result = await searchMarketJobsWithCache({
+    searchContext: {
+      role: "Azure Devops Engineer",
+      location: "Malaysia",
+      industry: "data-it",
+    },
+    forceRefresh: true,
+    cache: {
+      async get() {
+        reads += 1;
+        return {
+          hit: true,
+          cacheKey: "jooble|job-requirements-v1|data-it|azure devops engineer|malaysia",
+          result: {
+            configured: true,
+            source: "Jooble",
+            jobs: [{ id: "stale-job" }],
+          },
+        };
+      },
+      async set(searchContext, providerResult) {
+        writes.push({ searchContext, providerResult });
+        return {
+          ok: true,
+          cacheKey: "jooble|job-requirements-v1|data-it|azure devops engineer|malaysia",
+          expiresAt: "2026-05-25T12:00:00.000Z",
+        };
+      },
+    },
+    async searcher() {
+      return {
+        configured: true,
+        source: "Jooble",
+        total: 1,
+        jobs: [{ id: "live-job", title: "Fresh Azure DevOps Job" }],
+      };
+    },
+  });
+
+  assert.equal(reads, 0);
+  assert.equal(writes.length, 1);
+  assert.equal(result.cached, false);
+  assert.equal(result.cacheStatus, "refreshed");
+  assert.equal(result.jobs[0].id, "live-job");
+});
+
 test("does not cache not-configured job provider results", async () => {
   let writes = 0;
   const result = await searchMarketJobsWithCache({
