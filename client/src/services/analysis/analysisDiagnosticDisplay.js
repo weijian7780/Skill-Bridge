@@ -1,10 +1,13 @@
-import { getRegionAnalysisCopy } from "../career/regionOptions.js";
+import { getRegionAnalysisCopy, getRegionOption } from "../career/regionOptions.js";
 
 export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
   const topMatchCount = Math.min(analysis?.marketEvidence?.jobMatches?.length ?? 0, 5);
   const role = careerTarget?.role || "target role";
   const region = careerTarget?.region ? getRegionAnalysisCopy(careerTarget.region) : "in your selected location";
+  const regionLabel = careerTarget?.region ? getRegionOption(careerTarget.region).label : "selected market";
   const jobCount = analysis?.marketEvidence?.jobCount ?? analysis?.marketEvidence?.jobMatches?.length ?? 0;
+  const rawJobCount = analysis?.marketEvidence?.rawJobCount ?? 0;
+  const excludedJobCount = analysis?.marketEvidence?.excludedJobCount ?? 0;
 
   if (analysis?.status === "ready") {
     const partialJobCount = analysis?.marketEvidence?.partialJobCount ?? 0;
@@ -42,6 +45,40 @@ export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
         { label: "Next comparison", value: `${role} jobs ${region} will be compared after upload.` },
       ],
       priorityInterpretation: "Upload and confirm your latest CV before reading market-fit results.",
+    };
+  }
+
+  if (analysis?.status === "needs_market" && rawJobCount > 0 && jobCount === 0 && excludedJobCount > 0) {
+    return {
+      label: `${role} match`,
+      value: "No local match",
+      isCalculated: false,
+      formula: `Loaded ${rawJobCount} provider ${pluralise("job", rawJobCount)}, but 0 matched ${role} in ${regionLabel}.`,
+      diagnosisTitle: "What the market is telling you",
+      diagnosisHeadline: `The job provider returned results, but none matched ${role} in ${regionLabel} after filtering.`,
+      diagnosisFacts: [
+        { label: "Provider results loaded", value: `${rawJobCount} ${pluralise("job", rawJobCount)} returned.` },
+        { label: "Used for scoring", value: "0 jobs matched the selected target." },
+        { label: "Filtered out", value: `${excludedJobCount} ${pluralise("job", excludedJobCount)} looked unrelated to the selected role, region, or industry.` },
+        { label: "Current target", value: `${role} in ${regionLabel}.` },
+      ],
+      priorityInterpretation: "Try All Malaysia, another nearby region, or a broader target role before building a roadmap.",
+    };
+  }
+
+  if (analysis?.status === "needs_market" && rawJobCount > 0 && jobCount === 0) {
+    return {
+      label: `${role} match`,
+      value: "No requirements",
+      isCalculated: false,
+      formula: `Loaded ${rawJobCount} provider ${pluralise("job", rawJobCount)}, but no hard skills or tools were detected for scoring.`,
+      diagnosisTitle: "What the market is telling you",
+      diagnosisHeadline: `SkillBridge loaded ${role} jobs ${region}, but could not detect usable hard skills or tools from those posts.`,
+      diagnosisFacts: [
+        { label: "Provider results loaded", value: `${rawJobCount} ${pluralise("job", rawJobCount)} returned.` },
+        { label: "Used for scoring", value: "0 jobs exposed usable hard skills or tools." },
+      ],
+      priorityInterpretation: "Try a broader target role, reload jobs, or use All Malaysia to find posts with clearer requirement text.",
     };
   }
 
@@ -154,6 +191,10 @@ function formatList(items) {
   }
 
   return `${filtered.slice(0, -1).join(", ")}, and ${filtered[filtered.length - 1]}`;
+}
+
+function pluralise(label, count) {
+  return count === 1 ? label : `${label}s`;
 }
 
 export function buildSkillEvidenceRows({

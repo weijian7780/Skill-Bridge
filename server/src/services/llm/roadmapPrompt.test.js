@@ -40,5 +40,8 @@ test("roadmap prompt requires explicit what why when and how-to-start fields", (
   assert.match(prompt, /why/);
   assert.match(prompt, /when/);
   assert.match(prompt, /howToStart/);
+  assert.match(prompt, /learningFocus/);
+  assert.match(prompt, /portfolioOutput/);
   assert.match(prompt, /successCriteria/);
+  assert.match(prompt, /Do not invent or return URLs/);
 });

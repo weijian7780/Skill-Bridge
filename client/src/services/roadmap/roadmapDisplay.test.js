@@ -128,6 +128,52 @@ test("normalizes scalar generated roadmap fields before rendering", () => {
   assert.deepEqual(view.pathItems[0].taskChips, ["Publish the dashboard screenshot."]);
 });
 
+test("maps project roadmap content and real resource links for rendering", () => {
+  const [card] = buildCompactRoadmapCards([
+    {
+      month: 1,
+      skill: "Power BI",
+      title: "Power BI dashboard sprint",
+      learningFocus: [
+        "Power Query data cleaning",
+        "DAX measures",
+        "Dashboard storytelling",
+      ],
+      tasks: [
+        "Import one CSV dataset.",
+        "Create three KPI cards.",
+        "Write three business insights.",
+      ],
+      portfolioOutput: "A Power BI dashboard case study with screenshots.",
+      resources: [
+        {
+          label: "Microsoft Learn Power BI",
+          url: "https://learn.microsoft.com/power-bi/",
+        },
+      ],
+      companyEvidence: ["TWO95"],
+    },
+  ]);
+
+  assert.deepEqual(card.learningFocus, [
+    "Power Query data cleaning",
+    "DAX measures",
+    "Dashboard storytelling",
+  ]);
+  assert.deepEqual(card.projectTasks, [
+    "Import one CSV dataset.",
+    "Create three KPI cards.",
+    "Write three business insights.",
+  ]);
+  assert.equal(card.portfolioOutput, "A Power BI dashboard case study with screenshots.");
+  assert.deepEqual(card.resources, [
+    {
+      label: "Microsoft Learn Power BI",
+      url: "https://learn.microsoft.com/power-bi/",
+    },
+  ]);
+});
+
 test("builds a pre-generation roadmap page view when analysis has not produced a plan", () => {
   const view = buildRoadmapPageView({
     careerTarget: {

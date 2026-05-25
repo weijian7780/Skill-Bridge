@@ -31,7 +31,11 @@ export function buildAnalysisActionLabel({ analysisStatus, jobStatus }) {
     return "Job API Unavailable";
   }
 
-  return "Loading Jobs";
+  if (/loaded \d+/i.test(jobStatus)) {
+    return "Reload Jobs";
+  }
+
+  return "Load Jobs";
 }
 
 function buildMarketUnavailableMessage(jobStatus = "") {

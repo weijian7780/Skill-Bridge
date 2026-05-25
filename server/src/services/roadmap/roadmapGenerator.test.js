@@ -141,6 +141,37 @@ test("builds roadmap items with what why when and how-to-start guidance", () => 
   assert.deepEqual(roadmap.items[0].companyEvidence, ["Analytics Sdn Bhd", "BI Malaysia"]);
 });
 
+test("builds portfolio-project roadmap content with real resource links", () => {
+  const roadmap = buildLocalRoadmap({
+    careerTarget: { role: "Data Analyst" },
+    analysis: {
+      missingSkills: ["Power BI", "Uncommon Skill"],
+      marketEvidence: {
+        skillDemand: {
+          "Power BI": 4,
+          "Uncommon Skill": 1,
+        },
+        jobMatches: [
+          { company: "Analytics Sdn Bhd", missingSkills: ["Power BI", "Uncommon Skill"] },
+        ],
+      },
+    },
+  });
+
+  assert.deepEqual(roadmap.items[0].learningFocus.slice(0, 3), [
+    "Power Query data cleaning",
+    "Data modelling relationships",
+    "DAX measures",
+  ]);
+  assert.match(roadmap.items[0].portfolioOutput, /Power BI dashboard case study/i);
+  assert.deepEqual(roadmap.items[0].resources[0], {
+    label: "Microsoft Learn Power BI",
+    url: "https://learn.microsoft.com/power-bi/",
+  });
+  assert.match(roadmap.items[1].resources[0].url, /^https:\/\/www\.google\.com\/search\?q=/);
+  assert.match(roadmap.items[1].resources[0].label, /Uncommon Skill/);
+});
+
 test("does not call the roadmap AI when no missing skills exist", async () => {
   const previousEnv = captureEnv(["GEMINI_API_KEY"]);
   process.env.GEMINI_API_KEY = "fake-key-that-should-not-be-used";

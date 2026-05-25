@@ -38,3 +38,23 @@ test("explains that a stopped local API server blocks job-market results", () =>
     "Retry Job Search",
   );
 });
+
+test("labels completed but unscorable market searches as reloadable instead of loading", () => {
+  assert.equal(
+    buildAnalysisActionLabel({
+      analysisStatus: "needs_market",
+      jobStatus: "Loaded 8 Jooble jobs for this target.",
+    }),
+    "Reload Jobs",
+  );
+});
+
+test("uses a command label before the first market job search", () => {
+  assert.equal(
+    buildAnalysisActionLabel({
+      analysisStatus: "needs_market",
+      jobStatus: "Career target changed. Open Analysis to load matching market jobs.",
+    }),
+    "Load Jobs",
+  );
+});

@@ -1,5 +1,6 @@
 import { generateRoadmapWithGemini } from "../llm/geminiRoadmapClient.js";
 import { buildLocalRoadmap } from "./localRoadmapBuilder.js";
+import { addResourcesToRoadmapItems } from "./roadmapResources.js";
 
 export async function generateRoadmap({ careerTarget, skillProfile, analysis }) {
   const missingSkills = analysis?.missingSkills ?? [];
@@ -18,6 +19,7 @@ export async function generateRoadmap({ careerTarget, skillProfile, analysis }) 
     if (geminiRoadmap?.items?.length) {
       return {
         ...geminiRoadmap,
+        items: addResourcesToRoadmapItems(geminiRoadmap.items, careerTarget),
         source: geminiRoadmap.source || "gemini",
       };
     }

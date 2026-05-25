@@ -122,39 +122,62 @@ export function RoadmapPage() {
                           </div>
                         )}
 
-                        <div className="space-y-sm border-t border-outline-variant pt-md">
+                        <div className="space-y-md border-t border-outline-variant pt-md">
                           <div>
-                            <span className="font-label-sm text-label-sm text-primary block mb-1">What</span>
-                            <p className="font-body-sm text-body-sm text-on-surface">{item.what}</p>
+                            <span className="font-label-sm text-label-sm text-primary block mb-2">Learning focus</span>
+                            <div className={`flex flex-wrap gap-xs ${left ? "md:justify-end" : ""}`}>
+                              {item.learningFocus.map((focus) => (
+                                <span key={focus} className="rounded-lg bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
+                                  {focus}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                           <div>
-                            <span className="font-label-sm text-label-sm text-primary block mb-1">Why</span>
-                            <p className="font-body-sm text-body-sm text-on-surface">{item.why}</p>
+                            <span className="font-label-sm text-label-sm text-primary block mb-2">Project tasks</span>
+                            <ul className={`space-y-2 ${left ? "md:ml-auto" : ""}`}>
+                              {item.projectTasks.map((task) => (
+                                <li key={task} className={`flex gap-xs font-body-sm text-body-sm text-on-surface ${left ? "md:flex-row-reverse" : ""}`}>
+                                  <Icon name="check_circle" className="text-primary text-[16px] mt-[2px] shrink-0" />
+                                  <span>{task}</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                           <div>
-                            <span className="font-label-sm text-label-sm text-primary block mb-1">When</span>
+                            <span className="font-label-sm text-label-sm text-primary block mb-1">Timeline</span>
                             <p className="font-body-sm text-body-sm text-on-surface">{item.when}</p>
                           </div>
-                          {item.howToStart.length > 0 && (
+                          <div>
+                            <span className="font-label-sm text-label-sm text-primary block mb-1">Portfolio output</span>
+                            <p className="font-body-sm text-body-sm text-on-surface">{item.portfolioOutput}</p>
+                          </div>
+                          {item.resources.length > 0 && (
                             <div>
-                              <span className="font-label-sm text-label-sm text-primary block mb-1">How to start</span>
+                              <span className="font-label-sm text-label-sm text-primary block mb-2">Resources</span>
                               <div className={`flex flex-wrap gap-xs ${left ? "md:justify-end" : ""}`}>
-                                {item.howToStart.map((task) => (
-                                  <span key={task} className="rounded-lg bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
-                                    {task}
-                                  </span>
+                                {item.resources.map((resource) => (
+                                  resource.url ? (
+                                    <a
+                                      key={`${resource.label}-${resource.url}`}
+                                      className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-3 py-1 font-label-sm text-label-sm text-primary hover:bg-primary/15"
+                                      href={resource.url}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      <Icon name="open_in_new" className="text-[16px]" />
+                                      {resource.label}
+                                    </a>
+                                  ) : (
+                                    <span key={resource.label} className="inline-flex items-center gap-xs rounded-lg border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface-variant">
+                                      <Icon name="link" className="text-[16px]" />
+                                      {resource.label}
+                                    </span>
+                                  )
                                 ))}
                               </div>
                             </div>
                           )}
-                          <div>
-                            <span className="font-label-sm text-label-sm text-primary block mb-1">CV proof</span>
-                            <p className="font-body-sm text-body-sm text-on-surface">{item.successCriteria}</p>
-                          </div>
-                          <p className="inline-flex items-center gap-xs text-primary font-label-md text-label-md">
-                            <Icon name="link" className="text-[18px]" />
-                            {item.resource}
-                          </p>
                         </div>
 
                         <div className={`hidden md:block absolute top-8 ${left ? "-right-[36px]" : "-left-[36px]"} w-4 h-4 ${item.isActive ? "bg-primary" : "bg-outline-variant"} rounded-full border-4 border-surface z-10`} />

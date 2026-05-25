@@ -2,6 +2,8 @@ export function buildCompactRoadmapCards(items = []) {
   return items.map((item, index) => {
     const howToStart = toList(item.howToStart ?? item.tasks);
     const tasks = toList(item.tasks);
+    const learningFocus = toList(item.learningFocus ?? item.focus ?? item.what);
+    const resources = toResourceLinks(item.resources, item.resource);
     const companyEvidence = toList(item.companyEvidence, { splitCommas: true });
 
     return {
@@ -13,6 +15,15 @@ export function buildCompactRoadmapCards(items = []) {
       what: truncate(item.what || item.objective || item.description, 120),
       why: truncate(item.why || item.reason || item.whyNow, 140),
       when: truncate(item.when || `Month ${item.month ?? index + 1}`, 72),
+      learningFocus: learningFocus
+        .map((focus) => truncate(focus, 72))
+        .filter(Boolean)
+        .slice(0, 4),
+      projectTasks: tasks.length > 0
+        ? tasks.map((task) => truncate(task, 86)).filter(Boolean).slice(0, 4)
+        : howToStart.map((task) => truncate(task, 86)).filter(Boolean).slice(0, 4),
+      portfolioOutput: truncate(item.portfolioOutput || item.successCriteria || item.deliverable, 130),
+      resources,
       howToStart: howToStart
         .map((task) => truncate(task, 72))
         .filter(Boolean)
@@ -21,7 +32,7 @@ export function buildCompactRoadmapCards(items = []) {
       objective: truncate(item.objective || item.description, 86),
       reason: truncate(item.reason || item.whyNow, 96),
       proof: truncate(item.deliverable, 72),
-      resource: truncate(item.resource || item.resourceSearchQuery, 54),
+      resource: truncate(resources[0]?.label || item.resource || item.resourceSearchQuery, 54),
       companyChips: companyEvidence
         .map((company) => String(company || "").trim())
         .filter(Boolean)
@@ -197,4 +208,47 @@ function toList(value, { splitCommas = false } = {}) {
   }
 
   return [text];
+}
+
+function toResourceLinks(resources, fallbackResource = "") {
+  const normalized = [];
+  const candidates = Array.isArray(resources) ? resources : resources ? [resources] : [];
+
+  for (const resource of candidates) {
+    if (typeof resource === "string") {
+      const label = resource.trim();
+      if (label) {
+        normalized.push({
+          label: truncate(label, 64),
+          url: isHttpUrl(label) ? label : "",
+        });
+      }
+      continue;
+    }
+
+    const label = String(resource?.label || resource?.title || resource?.name || "").trim();
+    const url = String(resource?.url || resource?.href || "").trim();
+    if (label) {
+      normalized.push({
+        label: truncate(label, 64),
+        url: isHttpUrl(url) ? url : "",
+      });
+    }
+  }
+
+  if (normalized.length === 0 && fallbackResource) {
+    const label = String(fallbackResource).trim();
+    if (label) {
+      normalized.push({
+        label: truncate(label, 64),
+        url: isHttpUrl(label) ? label : "",
+      });
+    }
+  }
+
+  return normalized.slice(0, 3);
+}
+
+function isHttpUrl(value) {
+  return /^https?:\/\//i.test(String(value || ""));
 }

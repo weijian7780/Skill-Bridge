@@ -1,3 +1,5 @@
+import { resourcesForSkill } from "./roadmapResources.js";
+
 export function buildLocalRoadmap({ careerTarget, analysis }) {
   const missingSkills = analysis?.missingSkills ?? [];
   const skillDemand = analysis?.marketEvidence?.skillDemand ?? {};
@@ -15,11 +17,16 @@ export function buildLocalRoadmap({ careerTarget, analysis }) {
       const when = `Month ${month}: ${index === 0 ? "start immediately" : `after completing ${missingSkills[index - 1]}`}`;
       const howToStart = buildHowToStart({ skill, role });
       const successCriteria = buildSuccessCriteria({ skill, role });
+      const learningFocus = buildLearningFocus(skill);
+      const portfolioOutput = buildPortfolioOutput({ skill, role });
 
       return {
         month,
         skill,
         title: `Build ${skill} evidence`,
+        learningFocus,
+        portfolioOutput,
+        resources: resourcesForSkill(skill, role),
         what,
         why,
         when,
@@ -115,6 +122,105 @@ function buildHowToStart({ skill, role }) {
   ];
 }
 
+function buildLearningFocus(skill) {
+  const focus = {
+    "Power BI": [
+      "Power Query data cleaning",
+      "Data modelling relationships",
+      "DAX measures",
+      "Dashboard storytelling",
+    ],
+    Tableau: [
+      "Data connection basics",
+      "Calculated fields",
+      "Interactive dashboards",
+      "Insight annotation",
+    ],
+    AWS: [
+      "Cloud storage basics",
+      "IAM fundamentals",
+      "Managed analytics services",
+      "Deployment cost awareness",
+    ],
+    Azure: [
+      "Azure fundamentals",
+      "Storage and compute basics",
+      "Data service overview",
+      "Cloud security basics",
+    ],
+    "Data Warehouse": [
+      "Fact and dimension tables",
+      "ETL flow design",
+      "Star schema basics",
+      "Reporting-ready data models",
+    ],
+    FigJam: [
+      "Workshop board structure",
+      "User-flow mapping",
+      "Ideation templates",
+      "Design collaboration notes",
+    ],
+    Miro: [
+      "Collaborative whiteboarding",
+      "Customer journey mapping",
+      "Workshop facilitation",
+      "Design handoff boards",
+    ],
+    Slack: [
+      "Team communication workflow",
+      "Channel etiquette",
+      "Async update writing",
+      "Stakeholder follow-up",
+    ],
+    "Google Suite": [
+      "Docs collaboration",
+      "Sheets tracking",
+      "Slides reporting",
+      "Drive file organization",
+    ],
+    "UI/UX Principles": [
+      "Usability heuristics",
+      "Interaction design basics",
+      "Accessibility awareness",
+      "User-centered design decisions",
+    ],
+    "UI/UX Guidelines": [
+      "Design-system rules",
+      "Mobile layout conventions",
+      "Accessibility guidelines",
+      "Component consistency",
+    ],
+    "UI/UX Best Practices": [
+      "Research-backed design decisions",
+      "Prototype testing",
+      "Clear information hierarchy",
+      "Design critique iteration",
+    ],
+  };
+
+  return focus[skill] ?? [
+    `${skill} core concepts`,
+    `${skill} applied workflow`,
+    `${skill} portfolio evidence`,
+  ];
+}
+
 function buildSuccessCriteria({ skill, role }) {
   return `A CV-ready ${skill} artifact that proves you can apply this skill in ${role} work.`;
+}
+
+function buildPortfolioOutput({ skill, role }) {
+  const outputs = {
+    "Power BI": "A Power BI dashboard case study with screenshots, DAX notes, and three business insights.",
+    Tableau: "A Tableau dashboard case study with interactive views and a short insight summary.",
+    AWS: "A simple cloud analytics architecture diagram plus notes explaining the AWS services used.",
+    Azure: "A simple Azure data workflow diagram plus notes explaining storage, compute, and security choices.",
+    "Data Warehouse": "A warehouse schema diagram with sample fact/dimension tables and reporting use cases.",
+    FigJam: "A FigJam workshop board showing user journey, ideas, and prioritised design decisions.",
+    Miro: "A Miro collaboration board showing a journey map, pain points, and proposed design actions.",
+    Slack: "A stakeholder communication playbook with sample channel updates and decision summaries.",
+    "Google Suite": "A project workspace containing a planning sheet, short report, and presentation summary.",
+  };
+
+  return outputs[skill] ?? `A ${skill} portfolio project that proves practical use for ${role} roles.`;
 }

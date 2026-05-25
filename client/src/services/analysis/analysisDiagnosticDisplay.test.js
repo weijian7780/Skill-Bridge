@@ -30,6 +30,64 @@ test("shows pending instead of 0 percent when analysis inputs are incomplete", (
   assert.match(display.priorityInterpretation, /Load market jobs/);
 });
 
+test("shows no local match when loaded provider jobs do not match the selected region", () => {
+  const display = buildDiagnosticScoreDisplay({
+    analysis: {
+      status: "needs_market",
+      readinessScore: 0,
+      matchedSkills: [],
+      missingSkills: [],
+      marketEvidence: {
+        rawJobCount: 8,
+        jobCount: 0,
+        excludedJobCount: 8,
+        skillDemand: {},
+        jobMatches: [],
+      },
+    },
+    careerTarget: {
+      role: "UI/UX Designer",
+      region: "kuala-lumpur",
+    },
+  });
+
+  assert.equal(display.value, "No local match");
+  assert.equal(display.isCalculated, false);
+  assert.match(display.formula, /Loaded 8 provider jobs/);
+  assert.match(display.formula, /0 matched UI\/UX Designer in Kuala Lumpur/);
+  assert.match(display.diagnosisHeadline, /none matched UI\/UX Designer in Kuala Lumpur/);
+  assert.match(display.priorityInterpretation, /Try All Malaysia/);
+});
+
+test("shows no requirements when loaded jobs expose no scored skills", () => {
+  const display = buildDiagnosticScoreDisplay({
+    analysis: {
+      status: "needs_market",
+      readinessScore: 0,
+      matchedSkills: [],
+      missingSkills: [],
+      marketEvidence: {
+        rawJobCount: 3,
+        jobCount: 0,
+        excludedJobCount: 0,
+        skillDemand: {},
+        jobMatches: [],
+      },
+    },
+    careerTarget: {
+      role: "UI/UX Designer",
+      region: "all-malaysia",
+    },
+  });
+
+  assert.equal(display.value, "No requirements");
+  assert.equal(display.isCalculated, false);
+  assert.match(display.formula, /Loaded 3 provider jobs/);
+  assert.match(display.formula, /no hard skills or tools were detected/);
+  assert.match(display.diagnosisHeadline, /could not detect usable hard skills or tools/);
+  assert.match(display.priorityInterpretation, /broader target role/);
+});
+
 test("explains the calculated score using top company requirement matches", () => {
   const display = buildDiagnosticScoreDisplay({
     analysis: {

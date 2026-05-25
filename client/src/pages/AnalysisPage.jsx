@@ -52,6 +52,8 @@ export function AnalysisPage() {
     ...(skillProfile.softSkills ?? []),
     ...(skillProfile.certifications ?? []),
   ].filter(Boolean);
+  const hasLoadedProviderJobs = (analysis.marketEvidence.rawJobCount ?? 0) > 0;
+  const hasLoadedUnusableMarketJobs = analysis.status === "needs_market" && hasLoadedProviderJobs;
   const actionLabel = buildAnalysisActionLabel({
     analysisStatus: analysis.status,
     jobStatus,
@@ -288,10 +290,11 @@ export function AnalysisPage() {
             <div className="mt-8 flex justify-end">
               {analysis.status === "needs_market" ? (
                 <button
-                  className="bg-surface-container-highest text-on-surface-variant px-8 py-3 rounded-xl font-headline-md flex items-center gap-2 hover:border hover:border-primary disabled:cursor-not-allowed"
+                  className="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-xl font-headline-md transition-all active:scale-95 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-primary"
                   disabled={!hasConfirmedCv}
                   onClick={retryJobSearch}
                 >
+                  <Icon name={hasLoadedProviderJobs ? "refresh" : "search"} />
                   {actionLabel}
                 </button>
               ) : analysis.status === "ready" ? (
@@ -351,7 +354,9 @@ export function AnalysisPage() {
               {matchedSkillRows.length === 0 && (
                 <div className="space-y-sm">
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    {analysis.status === "needs_market"
+                    {hasLoadedUnusableMarketJobs
+                      ? "Jobs were loaded, but none produced scorable company requirements for this target."
+                      : analysis.status === "needs_market"
                       ? "Market job skills have not loaded yet."
                       : isReady
                         ? "No CV skills matched the current market skills yet."
@@ -401,6 +406,8 @@ export function AnalysisPage() {
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
                     {isReady
                       ? "No missing market job skills detected for the current target."
+                      : hasLoadedUnusableMarketJobs
+                        ? "No gaps can be calculated because the loaded jobs produced no usable company requirements for this target."
                       : analysis.status === "needs_market"
                         ? "Market job skills are required before gaps can be calculated."
                         : "Confirm a latest CV to calculate gaps."}
@@ -467,7 +474,9 @@ export function AnalysisPage() {
                   </div>
                 ) : (
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-sm">
-                    No market requirements detected yet.
+                    {hasLoadedUnusableMarketJobs
+                      ? "No hard skills or tools were detected from the loaded provider jobs."
+                      : "No market requirements detected yet."}
                   </p>
                 )}
               </div>
@@ -494,7 +503,9 @@ export function AnalysisPage() {
 
             {companyRequirementMatches.length === 0 ? (
               <p className="font-body-sm text-body-sm text-on-surface-variant">
-                No company requirements found yet. Try changing your target role, choosing All Malaysia, checking job API configuration, or uploading and confirming your CV again.
+                {hasLoadedUnusableMarketJobs
+                  ? "No company requirements were usable for this target. Try choosing All Malaysia, selecting a nearby region, or broadening the target role."
+                  : "No company requirements found yet. Try changing your target role, choosing All Malaysia, checking job API configuration, or uploading and confirming your CV again."}
               </p>
             ) : (
               <>
