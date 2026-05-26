@@ -61,7 +61,7 @@ export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
       diagnosisFacts: [
         { label: "Provider results loaded", value: `${rawJobCount} ${pluralise("job", rawJobCount)} returned.` },
         { label: "Used for scoring", value: "0 jobs matched the selected target." },
-        { label: "Filtered out", value: `${excludedJobCount} ${pluralise("job", excludedJobCount)} looked unrelated to the selected role, region, or industry.` },
+        { label: "Filtered out", value: `${excludedJobCount} ${pluralise("job", excludedJobCount)} looked unrelated to the selected role or region.` },
         { label: "Current target", value: `${role} in ${regionLabel}.` },
       ],
       priorityInterpretation: "Try All Malaysia, another nearby region, or a broader target role before building a roadmap.",

@@ -4,14 +4,12 @@ const DEFAULT_SKILL_EXTRACTOR_VERSION = "job-requirements-v2";
 export function buildJobCacheKey({
   provider = "jooble",
   version = DEFAULT_SKILL_EXTRACTOR_VERSION,
-  industry = "",
   role = "",
   location = "",
 }) {
   return [
     normalizeCachePart(provider),
     normalizeCachePart(version),
-    normalizeCachePart(industry || "any-industry"),
     normalizeCachePart(role),
     normalizeCachePart(location),
   ].join("|");
@@ -28,7 +26,6 @@ export function createSupabaseJobCache({
     const cacheKey = buildJobCacheKey({
       provider: config.provider,
       version: config.version,
-      industry: searchContext.industry,
       role: searchContext.role,
       location: searchContext.location,
     });
@@ -89,7 +86,6 @@ export function createSupabaseJobCache({
     const cacheKey = buildJobCacheKey({
       provider: config.provider,
       version: config.version,
-      industry: searchContext.industry,
       role: searchContext.role,
       location: searchContext.location,
     });

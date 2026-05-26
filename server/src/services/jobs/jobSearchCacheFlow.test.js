@@ -100,7 +100,7 @@ test("refreshes market jobs by bypassing a cached result and storing the live re
         reads += 1;
         return {
           hit: true,
-          cacheKey: "jooble|job-requirements-v1|data-it|azure devops engineer|malaysia",
+          cacheKey: "jooble|job-requirements-v1|azure devops engineer|malaysia",
           result: {
             configured: true,
             source: "Jooble",
@@ -112,7 +112,7 @@ test("refreshes market jobs by bypassing a cached result and storing the live re
         writes.push({ searchContext, providerResult });
         return {
           ok: true,
-          cacheKey: "jooble|job-requirements-v1|data-it|azure devops engineer|malaysia",
+          cacheKey: "jooble|job-requirements-v1|azure devops engineer|malaysia",
           expiresAt: "2026-05-25T12:00:00.000Z",
         };
       },

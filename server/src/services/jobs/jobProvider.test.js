@@ -325,7 +325,7 @@ test("uses Jooble first by default and normalizes job skills", async () => {
   }
 });
 
-test("keeps Jooble keywords role-first when industry is selected", async () => {
+test("ignores legacy industry values when searching Jooble by role", async () => {
   const restore = withEnv({
     GEMINI_API_KEY: undefined,
     JOB_PROVIDER: undefined,
@@ -366,7 +366,7 @@ test("keeps Jooble keywords role-first when industry is selected", async () => {
   }
 });
 
-test("uses selected industry keywords only when the target role is empty", async () => {
+test("uses the default target role instead of industry keywords when role is empty", async () => {
   const restore = withEnv({
     GEMINI_API_KEY: undefined,
     JOB_PROVIDER: undefined,
@@ -390,7 +390,7 @@ test("uses selected industry keywords only when the target role is empty", async
     });
 
     const requestBody = JSON.parse(calls[0].options.body);
-    assert.equal(requestBody.keywords, "data analytics software cloud database IT");
+    assert.equal(requestBody.keywords, "Data Analyst");
     assert.equal(requestBody.location, "Malaysia");
   } finally {
     restoreFetch();

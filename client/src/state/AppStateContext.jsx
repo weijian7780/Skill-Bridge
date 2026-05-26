@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { buildSkillGapAnalysis } from "../services/analysis/skillGapEngine.js";
-import { normaliseIndustryId } from "../services/career/industryOptions.js";
 import { normaliseRegionId } from "../services/career/regionOptions.js";
 import {
   buildStudentProfileSnapshot,
@@ -14,7 +13,6 @@ const AppStateContext = createContext(null);
 
 const initialTarget = {
   role: "Data Analyst",
-  industry: "data-it",
   region: "all-malaysia",
 };
 
@@ -32,7 +30,6 @@ function toCareerTarget(snapshot) {
   const target = snapshot?.career_target ?? {};
   return {
     role: target.role ?? initialTarget.role,
-    industry: normaliseIndustryId(target.industry ?? initialTarget.industry),
     region: normaliseRegionId(target.region ?? initialTarget.region),
   };
 }

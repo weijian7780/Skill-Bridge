@@ -127,20 +127,18 @@ export function AnalysisPage() {
   const jobTargetKey = useMemo(
     () => buildMarketJobTargetKey({
       role: careerTarget.role,
-      industry: careerTarget.industry,
       regionSearchValue,
     }),
-    [careerTarget.industry, careerTarget.role, regionSearchValue],
+    [careerTarget.role, regionSearchValue],
   );
   const jobSearchTriggerKey = useMemo(
     () => buildMarketJobSearchTriggerKey({
       hasConfirmedCv,
       role: careerTarget.role,
-      industry: careerTarget.industry,
       regionSearchValue,
       jobSearchAttempt,
     }),
-    [careerTarget.industry, careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionSearchValue],
+    [careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionSearchValue],
   );
 
   useEffect(() => {
@@ -173,7 +171,6 @@ export function AnalysisPage() {
       try {
         const result = await searchMarketJobs({
           role: careerTarget.role,
-          industry: careerTarget.industry,
           region: careerTarget.region,
           forceRefresh: jobSearchAttempt > 0,
         });
@@ -207,7 +204,7 @@ export function AnalysisPage() {
     return () => {
       cancelled = true;
     };
-  }, [careerTarget.industry, careerTarget.role, jobSearchAttempt, jobSearchTriggerKey, jobTargetKey, regionAnalysisCopy, regionSearchValue, setJobStatus, setJobs, setLoadedJobTargetKey]);
+  }, [careerTarget.role, jobSearchAttempt, jobSearchTriggerKey, jobTargetKey, regionAnalysisCopy, regionSearchValue, setJobStatus, setJobs, setLoadedJobTargetKey]);
 
   function retryJobSearch() {
     setJobSearchAttempt((attempt) => attempt + 1);

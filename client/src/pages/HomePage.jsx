@@ -20,7 +20,6 @@ import {
   shouldShowCompanyMatchToggle,
 } from "../services/analysis/companyMatchDisplay.js";
 import { buildMarketEvidenceOverview } from "../services/analysis/marketEvidenceDisplay.js";
-import { industryOptions } from "../services/career/industryOptions.js";
 import {
   getRegionAnalysisCopy,
   getRegionOption,
@@ -172,20 +171,18 @@ export function HomePage() {
   const jobTargetKey = useMemo(
     () => buildMarketJobTargetKey({
       role: careerTarget.role,
-      industry: careerTarget.industry,
       regionSearchValue,
     }),
-    [careerTarget.industry, careerTarget.role, regionSearchValue],
+    [careerTarget.role, regionSearchValue],
   );
   const jobSearchTriggerKey = useMemo(
     () => buildMarketJobSearchTriggerKey({
       hasConfirmedCv,
       role: careerTarget.role,
-      industry: careerTarget.industry,
       regionSearchValue,
       jobSearchAttempt,
     }),
-    [careerTarget.industry, careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionSearchValue],
+    [careerTarget.role, hasConfirmedCv, jobSearchAttempt, regionSearchValue],
   );
   const reviewedSkillProfile = useMemo(() => {
     if (!pendingDraft || !edits) {
@@ -237,7 +234,6 @@ export function HomePage() {
       try {
         const result = await searchMarketJobs({
           role: careerTarget.role,
-          industry: careerTarget.industry,
           region: careerTarget.region,
           forceRefresh: jobSearchAttempt > 0,
         });
@@ -275,7 +271,7 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [careerTarget.industry, careerTarget.region, careerTarget.role, jobSearchAttempt, jobSearchTriggerKey, jobTargetKey, regionAnalysisCopy, setJobStatus, setJobs, setLoadedJobTargetKey]);
+  }, [careerTarget.region, careerTarget.role, jobSearchAttempt, jobSearchTriggerKey, jobTargetKey, regionAnalysisCopy, setJobStatus, setJobs, setLoadedJobTargetKey]);
 
   function saveTargetAndSearch(event) {
     event.preventDefault();
@@ -286,7 +282,6 @@ export function HomePage() {
     };
     const targetUnchanged =
       nextTarget.role === careerTarget.role &&
-      nextTarget.industry === careerTarget.industry &&
       nextTarget.region === careerTarget.region;
 
     setShowAllCompanyMatches(false);
@@ -452,18 +447,6 @@ export function HomePage() {
 
           <div className="mt-sm flex flex-col gap-sm lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-xs">
-              <label className="inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-label-sm text-label-sm text-on-surface-variant">
-                Industry
-                <select
-                  className="border-0 bg-transparent p-0 font-label-sm text-label-sm text-on-surface shadow-none outline-none focus:border-0 focus:ring-0"
-                  onChange={(event) => setDraft({ ...draft, industry: event.target.value })}
-                  value={draft.industry}
-                >
-                  {industryOptions.map((industry) => (
-                    <option key={industry.id} value={industry.id}>{industry.label}</option>
-                  ))}
-                </select>
-              </label>
               {suggestedRole && (
                 <button
                   className="inline-flex items-center gap-xs rounded-full border border-primary bg-primary-container px-3 py-2 font-label-sm text-label-sm text-primary transition-colors hover:bg-primary-container/80"

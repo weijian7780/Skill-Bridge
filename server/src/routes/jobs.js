@@ -8,10 +8,9 @@ jobsRouter.get("/search", async (request, response, next) => {
   try {
     const role = String(request.query.role || "Data Analyst");
     const location = String(request.query.location || "Malaysia");
-    const industry = String(request.query.industry || "");
     const forceRefresh = String(request.query.refresh || "").toLowerCase() === "true";
     const result = await searchMarketJobsWithCache({
-      searchContext: { role, location, industry },
+      searchContext: { role, location },
       cache: createSupabaseJobCache(),
       forceRefresh,
     });

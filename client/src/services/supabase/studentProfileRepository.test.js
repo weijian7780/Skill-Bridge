@@ -43,6 +43,7 @@ test("builds a Supabase profile snapshot without storing raw CV text", () => {
 
   assert.equal(snapshot.user_id, "user-123");
   assert.equal(snapshot.career_target.role, "Data Analyst");
+  assert.equal("industry" in snapshot.career_target, false);
   assert.deepEqual(snapshot.skill_profile.technical_skills, ["Python", "Excel"]);
   assert.deepEqual(snapshot.cv_document, {
     file_name: "alex-cv.pdf",

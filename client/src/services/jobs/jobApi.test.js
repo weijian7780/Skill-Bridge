@@ -33,14 +33,14 @@ test("builds job search URL from a changed user target", () => {
   );
 });
 
-test("includes selected industry in the job search URL", () => {
+test("ignores legacy industry values in the job search URL", () => {
   assert.equal(
     buildMarketJobSearchPath({
       role: "Data Analyst",
       region: "all-malaysia",
       industry: "Finance",
     }),
-    "/jobs/search?role=Data+Analyst&location=Malaysia&industry=finance",
+    "/jobs/search?role=Data+Analyst&location=Malaysia",
   );
 });
 
@@ -52,6 +52,6 @@ test("adds cache-bypass refresh flag for manual market job refresh", () => {
       industry: "data-it",
       forceRefresh: true,
     }),
-    "/jobs/search?role=Azure+Devops+Engineer&location=Malaysia&industry=data-it&refresh=true",
+    "/jobs/search?role=Azure+Devops+Engineer&location=Malaysia&refresh=true",
   );
 });

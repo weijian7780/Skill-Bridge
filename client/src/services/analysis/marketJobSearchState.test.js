@@ -13,8 +13,8 @@ test("reuses loaded market jobs when returning to analysis without changing targ
     shouldReuseLoadedMarketJobs({
       jobSearchAttempt: 0,
       jobs: [{ id: "cached-analysis-job" }],
-      loadedJobTargetKey: "Data Analyst|data-it|Malaysia",
-      currentJobTargetKey: "Data Analyst|data-it|Malaysia",
+      loadedJobTargetKey: "Data Analyst|Malaysia",
+      currentJobTargetKey: "Data Analyst|Malaysia",
       analysisStatus: "ready",
     }),
     true,
@@ -26,8 +26,8 @@ test("does not reuse loaded market jobs when the user explicitly retries", () =>
     shouldReuseLoadedMarketJobs({
       jobSearchAttempt: 1,
       jobs: [{ id: "cached-analysis-job" }],
-      loadedJobTargetKey: "Data Analyst|data-it|Malaysia",
-      currentJobTargetKey: "Data Analyst|data-it|Malaysia",
+      loadedJobTargetKey: "Data Analyst|Malaysia",
+      currentJobTargetKey: "Data Analyst|Malaysia",
       analysisStatus: "ready",
     }),
     false,
@@ -39,8 +39,8 @@ test("does not reuse loaded jobs from a different target", () => {
     shouldReuseLoadedMarketJobs({
       jobSearchAttempt: 0,
       jobs: [{ id: "old-target-job" }],
-      loadedJobTargetKey: "UI/UX Designer|data-it|Malaysia",
-      currentJobTargetKey: "Data Analyst|data-it|Malaysia",
+      loadedJobTargetKey: "UI/UX Designer|Malaysia",
+      currentJobTargetKey: "Data Analyst|Malaysia",
       analysisStatus: "ready",
     }),
     false,
@@ -52,8 +52,8 @@ test("does not reuse loaded provider jobs that did not produce analysis content"
     shouldReuseLoadedMarketJobs({
       jobSearchAttempt: 0,
       jobs: [{ id: "unusable-provider-job" }],
-      loadedJobTargetKey: "Data Analyst|data-it|Malaysia",
-      currentJobTargetKey: "Data Analyst|data-it|Malaysia",
+      loadedJobTargetKey: "Data Analyst|Malaysia",
+      currentJobTargetKey: "Data Analyst|Malaysia",
       analysisStatus: "needs_market",
     }),
     false,
@@ -67,7 +67,7 @@ test("builds a stable market target key without retry attempts", () => {
       industry: "data-it",
       regionSearchValue: "Malaysia",
     }),
-    "Data Analyst|data-it|Malaysia",
+    "Data Analyst|Malaysia",
   );
 });
 
@@ -79,7 +79,7 @@ test("builds the same market search key for route remounts with the same target"
       regionSearchValue: "Malaysia",
       jobSearchAttempt: 0,
     }),
-    "Data Analyst|data-it|Malaysia|0",
+    "Data Analyst|Malaysia|0",
   );
 });
 

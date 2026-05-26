@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
-import { industryOptions } from "../services/career/industryOptions.js";
 import { regionOptions } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 
@@ -68,15 +67,7 @@ export function CareerTargetPage() {
                   <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-                <div className="space-y-2">
-                  <label className="block font-label-md text-label-md text-on-surface-variant" htmlFor="industry">Industry</label>
-                  <select className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all" id="industry" value={draft.industry} onChange={(event) => setDraft({ ...draft, industry: event.target.value })}>
-                    {industryOptions.map((industry) => (
-                      <option key={industry.id} value={industry.id}>{industry.label}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 gap-md">
                 <div className="space-y-2">
                   <label className="block font-label-md text-label-md text-on-surface-variant" htmlFor="region">Region Preference</label>
                   <select className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all" id="region" value={draft.region} onChange={(event) => setDraft({ ...draft, region: event.target.value })}>
@@ -122,7 +113,7 @@ export function CareerTargetPage() {
             <div className="bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm">
               <h3 className="font-label-md text-label-md text-on-surface-variant uppercase mb-4">Why this matters?</h3>
               <ul className="space-y-4">
-                {["Get curated learning paths for specific industries.", "Receive relevant local job-market insights.", "Keep roadmap recommendations tied to your target role."].map((item) => (
+                {["Get curated learning paths for the target role.", "Receive relevant local job-market insights.", "Keep roadmap recommendations tied to your target role."].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <Icon name="check_circle" className="text-primary text-[20px]" />
                     <span className="font-body-sm text-body-sm text-on-surface">{item}</span>

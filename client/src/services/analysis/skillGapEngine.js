@@ -1,5 +1,4 @@
 import { getRegionOption } from "../career/regionOptions.js";
-import { jobMatchesIndustry } from "../career/industryOptions.js";
 
 export function buildSkillGapAnalysis({ careerTarget, cvDocument, skillProfile, jobs = [] }) {
   const cvSkills = normaliseSkills([
@@ -124,10 +123,6 @@ function isRelevantJobPosting(job, careerTarget = {}) {
     return false;
   }
 
-  if (!isRelevantIndustry(job, careerTarget)) {
-    return false;
-  }
-
   const role = normalizeText(careerTarget.role);
   const text = normalizeText(`${job.title || ""} ${job.description || ""}`);
   if (!role) {
@@ -164,14 +159,6 @@ function isRelevantJobPosting(job, careerTarget = {}) {
 
   const roleTokens = meaningfulRoleTokens(role);
   return roleTokens.length === 0 || roleTokens.every((token) => text.includes(token));
-}
-
-function isRelevantIndustry(job, careerTarget = {}) {
-  if (!careerTarget.industry) {
-    return true;
-  }
-
-  return jobMatchesIndustry(job, careerTarget.industry);
 }
 
 function isRelevantLocation(job, careerTarget = {}) {

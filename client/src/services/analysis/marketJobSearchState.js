@@ -1,23 +1,20 @@
 export function buildMarketJobTargetKey({
   role,
-  industry,
   regionSearchValue,
 }) {
   return [
     role,
-    industry,
     regionSearchValue,
   ].map((part) => String(part ?? "")).join("|");
 }
 
 export function buildMarketJobSearchKey({
   role,
-  industry,
   regionSearchValue,
   jobSearchAttempt = 0,
 }) {
   return [
-    buildMarketJobTargetKey({ role, industry, regionSearchValue }),
+    buildMarketJobTargetKey({ role, regionSearchValue }),
     jobSearchAttempt,
   ].map((part) => String(part ?? "")).join("|");
 }
@@ -25,7 +22,6 @@ export function buildMarketJobSearchKey({
 export function buildMarketJobSearchTriggerKey({
   hasConfirmedCv,
   role,
-  industry,
   regionSearchValue,
   jobSearchAttempt = 0,
 }) {
@@ -35,7 +31,6 @@ export function buildMarketJobSearchTriggerKey({
 
   return buildMarketJobSearchKey({
     role,
-    industry,
     regionSearchValue,
     jobSearchAttempt,
   });

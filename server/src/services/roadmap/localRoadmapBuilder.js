@@ -104,7 +104,7 @@ function buildHowToStart({ skill, role }) {
       "Package the result as a BI case study with screenshots.",
     ],
     "Data Analytics": [
-      "Pick one clean dataset related to the target industry.",
+      "Pick one clean dataset related to the target role.",
       "Run basic exploration, segmentation, and trend analysis.",
       "Write the conclusion as a short business recommendation.",
     ],

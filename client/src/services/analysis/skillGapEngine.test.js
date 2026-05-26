@@ -310,7 +310,7 @@ test("excludes company postings that do not match the current career target role
   assert.deepEqual(analysis.missingSkills, ["Power BI"]);
 });
 
-test("excludes company postings outside the selected target industry", () => {
+test("keeps role-matching company postings regardless of legacy industry", () => {
   const analysis = buildSkillGapAnalysis({
     careerTarget: {
       role: "Data Analyst",
@@ -346,12 +346,12 @@ test("excludes company postings outside the selected target industry", () => {
 
   assert.equal(analysis.status, "ready");
   assert.equal(analysis.marketEvidence.rawJobCount, 2);
-  assert.equal(analysis.marketEvidence.excludedJobCount, 1);
+  assert.equal(analysis.marketEvidence.excludedJobCount, 0);
   assert.deepEqual(
     analysis.marketEvidence.jobMatches.map((job) => job.id),
-    ["finance-data-analyst"],
+    ["finance-data-analyst", "marketing-data-analyst"],
   );
-  assert.deepEqual(analysis.missingSkills, ["Power BI"]);
+  assert.deepEqual(analysis.missingSkills, ["Power BI", "Tableau"]);
 });
 
 test("uses the same resume skills against a different career target to find different related companies", () => {

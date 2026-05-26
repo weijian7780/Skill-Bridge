@@ -71,7 +71,6 @@ export function buildStudentProfileSnapshot({
     program: "",
     career_target: {
       role: careerTarget?.role ?? "",
-      industry: careerTarget?.industry ?? "",
       region: careerTarget?.region ?? "",
     },
     skill_profile: sanitizeSkillProfile(skillProfile),

@@ -1,10 +1,9 @@
 import { normalizeJoobleJob } from "./jobNormalizer.js";
 import { extractJobRequirementProfiles } from "./jobRequirementExtractor.js";
-import { buildIndustryAwareKeywords } from "./industrySearch.js";
 
 const joobleEndpoint = "https://jooble.org/api";
 
-export async function searchJoobleJobs({ role, location, industry }) {
+export async function searchJoobleJobs({ role, location }) {
   const apiKey = process.env.JOOBLE_API_KEY;
 
   if (!apiKey) {
@@ -22,7 +21,7 @@ export async function searchJoobleJobs({ role, location, industry }) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      keywords: buildIndustryAwareKeywords({ role, industry }),
+      keywords: buildRoleKeywords(role),
       location,
       page: "1",
       ResultOnPage: "10",
@@ -48,4 +47,8 @@ export async function searchJoobleJobs({ role, location, industry }) {
     total: data.totalCount || 0,
     jobs: rawJobs.map((job, index) => normalizeJoobleJob(job, requirementProfiles[index])),
   };
+}
+
+function buildRoleKeywords(role) {
+  return String(role || "Data Analyst").trim() || "Data Analyst";
 }
