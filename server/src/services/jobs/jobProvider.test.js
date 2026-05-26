@@ -3,6 +3,44 @@ import assert from "node:assert/strict";
 
 import { searchMarketJobs } from "./jobProvider.js";
 
+const two95UiUxFullDescription = `
+Mid level and senior UI/UX Designer locals and expats available in Malaysia
+TWO95 International, Inc
+Malaysia
+For Jr./Mid level JD
+
+Requirements:
+
+Minimum 3 years of working experience as a Jr/Mid-level UI/UX Designer.
+Portfolio of design projects.
+Up-to-date knowledge of FIGMA & UI/UX principles, guidelines & best practices
+Team spirit; strong communication skills to collaborate with various stakeholders.
+Good time-management skills.
+Software/Tools Requirements:
+
+FIGMA
+(Optional) FIGJAM/ Miro
+Google Suite
+Slack
+For Senior level JD
+
+Minimum 5 years successful professional design experience, preferably at a digital agency or inhouse Web team for a product-driven business.
+Experience with Wordpress, HTML(5), CSS(3)
+Experience translating Mockups (e.g. Sketch) into HTML and CSS components
+Expertise in Web usability, general UX
+Experience with other web UI frameworks like jQuery, HTML5, CSS3, React, Angular, Bootstrap, etc. is a big plus
+Experience in web marketing/web design with a strong knowledge of HTML, Photoshop, FTP, web design and development principles
+Understanding browser and device compatibility
+Strong portfolio of design work and showing solutions to business problems through effective design.
+Enthusiastic and self-driven
+Team player but able to work on his own initiative
+Excellent communicator and presenter
+Enjoying working in a dynamic and multi-cultural team and environment
+Able to present concepts and lead internal teams to the correct solution.
+Having attention to detail
+Fluent oral and written English mandatory
+`;
+
 test("uses Gemini to extract hard skills and tools from a full Jooble job description", async () => {
   const restore = withEnv({
     GEMINI_API_KEY: "test-gemini-key",
@@ -146,6 +184,215 @@ test("uses Gemini to extract hard skills and tools from a full Jooble job descri
     ]);
     assert.equal(result.jobs[0].requirements.certifications, undefined);
     assert.equal(calls.length, 2);
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
+test("fetches a full Jooble job page before extracting required hard skills and tools", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: "test-gemini-key",
+    GEMINI_BASE_URL: "http://gemini.test/v1beta/openai",
+    GEMINI_MODEL: "gemini-3.1-flash-lite",
+    GEMINI_FALLBACK_MODELS: "",
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+  });
+  const calls = [];
+  const restoreFetch = withFetch(async (url, options = {}) => {
+    const requestUrl = String(url);
+    calls.push({ url: requestUrl, options });
+
+    if (requestUrl === "https://jooble.org/api/jooble-key") {
+      return jsonResponse({
+        totalCount: 1,
+        jobs: [
+          {
+            id: "two95-uiux",
+            title: "Mid level and senior UI/UX Designer locals and expats available in Malaysia",
+            company: "TWO95 International, Inc",
+            location: "Malaysia",
+            snippet: "Up-to-date knowledge of FIGMA & UI/UX principles, guidelines & best practices.",
+            link: "https://jooble.org/jdp/-2210350391055282614",
+          },
+        ],
+      });
+    }
+
+    if (requestUrl === "https://jooble.org/jdp/-2210350391055282614") {
+      return htmlResponse(`<html><body><main>${two95UiUxFullDescription}</main></body></html>`);
+    }
+
+    if (requestUrl === "http://gemini.test/v1beta/openai/chat/completions") {
+      const requestBody = JSON.parse(options.body);
+      assert.match(requestBody.messages[0].content, /Software\/Tools Requirements/);
+      assert.match(requestBody.messages[0].content, /Wordpress/);
+      assert.match(requestBody.messages[0].content, /Slack/);
+      assert.match(requestBody.messages[0].content, /"partialRequirements": false/);
+
+      return jsonResponse({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                jobs: [
+                  {
+                    id: "two95-uiux",
+                    hardSkills: [
+                      "UI/UX Principles",
+                      "UI/UX Guidelines",
+                      "UI/UX Best Practices",
+                      "HTML/CSS Component Translation",
+                      "Web Usability",
+                      "Web Design",
+                      "Web Development Principles",
+                      "Browser Compatibility",
+                    ],
+                    tools: [
+                      "Figma",
+                      "Google Suite",
+                      "Slack",
+                      "WordPress",
+                      "HTML5",
+                      "CSS3",
+                      "Sketch",
+                      "Photoshop",
+                      "FTP",
+                    ],
+                    optionalTools: ["FigJam", "Miro", "jQuery", "React", "Angular", "Bootstrap"],
+                    softSkills: ["Teamwork", "Communication", "Time Management", "Self-driven", "Attention to Detail"],
+                    education: "",
+                    experience: "Minimum 3 years for Jr/Mid level or 5 years for senior level.",
+                    partialRequirements: false,
+                    confidence: 0.92,
+                  },
+                ],
+              }),
+            },
+          },
+        ],
+      });
+    }
+
+    throw new Error(`Unexpected fetch call: ${requestUrl}`);
+  });
+
+  try {
+    const result = await searchMarketJobs({
+      role: "UI/UX Designer",
+      location: "Malaysia",
+    });
+
+    assert.equal(result.jobs[0].requirements.partialRequirements, false);
+    assert.equal(result.jobs[0].requirements.sourceText, "description");
+    assert.deepEqual(result.jobs[0].requirements.hardSkills, [
+      "UI/UX Principles",
+      "UI/UX Guidelines",
+      "UI/UX Best Practices",
+      "HTML/CSS Component Translation",
+      "Web Usability",
+      "Web Design",
+      "Web Development Principles",
+      "Browser Compatibility",
+    ]);
+    assert.deepEqual(result.jobs[0].requirements.tools, [
+      "Figma",
+      "Google Suite",
+      "Slack",
+      "WordPress",
+      "HTML5",
+      "CSS3",
+      "Sketch",
+      "Photoshop",
+      "FTP",
+    ]);
+    assert.deepEqual(result.jobs[0].requirements.optionalTools, [
+      "FigJam",
+      "Miro",
+      "jQuery",
+      "React",
+      "Angular",
+      "Bootstrap",
+    ]);
+    assert.deepEqual(result.jobs[0].extractedSkills, [
+      "UI/UX Principles",
+      "UI/UX Guidelines",
+      "UI/UX Best Practices",
+      "HTML/CSS Component Translation",
+      "Web Usability",
+      "Web Design",
+      "Web Development Principles",
+      "Browser Compatibility",
+      "Figma",
+      "Google Suite",
+      "Slack",
+      "WordPress",
+      "HTML5",
+      "CSS3",
+      "Sketch",
+      "Photoshop",
+      "FTP",
+    ]);
+    assert.equal(calls.length, 3);
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
+test("local fallback excludes visibly optional tools from full Jooble descriptions", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: undefined,
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+  });
+  const restoreFetch = withFetch(async (url) => {
+    const requestUrl = String(url);
+
+    if (requestUrl === "https://jooble.org/api/jooble-key") {
+      return jsonResponse({
+        totalCount: 1,
+        jobs: [
+          {
+            id: "two95-uiux",
+            title: "Mid level and senior UI/UX Designer locals and expats available in Malaysia",
+            company: "TWO95 International, Inc",
+            location: "Malaysia",
+            snippet: "Up-to-date knowledge of FIGMA & UI/UX principles, guidelines & best practices.",
+            link: "https://jooble.org/jdp/-2210350391055282614",
+          },
+        ],
+      });
+    }
+
+    if (requestUrl === "https://jooble.org/jdp/-2210350391055282614") {
+      return htmlResponse(`<html><body><main>${two95UiUxFullDescription}</main></body></html>`);
+    }
+
+    throw new Error(`Unexpected fetch call: ${requestUrl}`);
+  });
+
+  try {
+    const result = await searchMarketJobs({
+      role: "UI/UX Designer",
+      location: "Malaysia",
+    });
+
+    assert.equal(result.jobs[0].requirements.partialRequirements, false);
+    assert.ok(result.jobs[0].requirements.tools.includes("Figma"));
+    assert.ok(result.jobs[0].requirements.tools.includes("Google Suite"));
+    assert.ok(result.jobs[0].requirements.tools.includes("Slack"));
+    assert.ok(result.jobs[0].requirements.tools.includes("WordPress"));
+    assert.ok(result.jobs[0].requirements.tools.includes("HTML5"));
+    assert.ok(result.jobs[0].requirements.tools.includes("CSS3"));
+    assert.ok(result.jobs[0].requirements.tools.includes("Sketch"));
+    assert.ok(result.jobs[0].requirements.tools.includes("Photoshop"));
+    assert.ok(result.jobs[0].requirements.tools.includes("FTP"));
+    assert.deepEqual(result.jobs[0].requirements.optionalTools, ["FigJam", "Miro", "jQuery", "React", "Angular", "Bootstrap"]);
+    assert.equal(result.jobs[0].extractedSkills.includes("FigJam"), false);
+    assert.equal(result.jobs[0].extractedSkills.includes("Miro"), false);
+    assert.equal(result.jobs[0].extractedSkills.includes("React"), false);
   } finally {
     restoreFetch();
     restore();
@@ -436,6 +683,13 @@ function jsonResponse(payload, init = {}) {
   return new Response(JSON.stringify(payload), {
     status: init.status ?? 200,
     headers: { "Content-Type": "application/json" },
+  });
+}
+
+function htmlResponse(payload, init = {}) {
+  return new Response(payload, {
+    status: init.status ?? 200,
+    headers: { "Content-Type": "text/html" },
   });
 }
 

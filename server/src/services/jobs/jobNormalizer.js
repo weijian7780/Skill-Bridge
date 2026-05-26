@@ -1,5 +1,5 @@
 export function normalizeJoobleJob(job, requirementProfile = null) {
-  const description = stripHtml(job.description || job.fullDescription || job.jobDescription || job.snippet || "");
+  const description = stripHtml(job.fullDescription || job.description || job.jobDescription || job.snippet || "");
   const title = job.title || "Untitled role";
   const company = job.company || "Unknown company";
   const location = job.location || "Malaysia";
@@ -80,6 +80,21 @@ export function extractJobSkills(text) {
     ["Miro", ["miro"]],
     ["Google Suite", ["google suite", "google workspace", "g suite", "google docs", "google sheets", "google slides"]],
     ["Slack", ["slack"]],
+    ["WordPress", ["wordpress", "word press"]],
+    ["HTML5", ["html5", "html 5", "html"]],
+    ["CSS3", ["css3", "css 3", "css"]],
+    ["Sketch", ["sketch"]],
+    ["Photoshop", ["photoshop"]],
+    ["FTP", ["ftp"]],
+    ["jQuery", ["jquery", "j query"]],
+    ["React", ["react", "reactjs", "react js"]],
+    ["Angular", ["angular", "angularjs", "angular js"]],
+    ["Bootstrap", ["bootstrap"]],
+    ["HTML/CSS Component Translation", ["translating mockups", "html and css components", "html css components"]],
+    ["Web Usability", ["web usability", "general ux"]],
+    ["Web Design", ["web design", "web marketing"]],
+    ["Web Development Principles", ["web design and development principles", "development principles"]],
+    ["Browser Compatibility", ["browser compatibility", "device compatibility", "browser and device compatibility"]],
     ["Cloud Basics", ["cloud basics", "cloud practitioner", "cloud infrastructure"]],
   ];
 

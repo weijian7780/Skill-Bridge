@@ -8,20 +8,26 @@ const BATCH_JOB_TEXT_LIMIT = 12000;
 
 const toolNames = new Set([
   "AWS",
+  "Angular",
   "Azure",
+  "Bootstrap",
+  "CSS3",
   "Elasticsearch",
   "Excel",
   "Figma",
   "FigJam",
   "Flume",
+  "FTP",
   "Google Suite",
   "Hadoop",
   "HBase",
+  "HTML5",
   "HCatalog",
   "HDFS",
   "Hive",
   "InVision",
   "Java",
+  "jQuery",
   "Kafka",
   "Linux",
   "Miro",
@@ -31,12 +37,15 @@ const toolNames = new Set([
   "Presto",
   "Python",
   "R",
+  "React",
+  "Sketch",
   "Slack",
   "Solr",
   "Spark SQL",
   "SQL",
   "Sqoop",
   "Tableau",
+  "WordPress",
   "Zookeeper",
 ]);
 
@@ -90,7 +99,7 @@ export async function extractJobRequirementProfiles(jobs = []) {
 }
 
 export function getBestJobDescription(job) {
-  const fullDescription = stripHtml(job.description || job.fullDescription || job.jobDescription || "");
+  const fullDescription = stripHtml(job.fullDescription || job.description || job.jobDescription || "");
   const snippet = stripHtml(job.snippet || "");
   const text = fullDescription || snippet;
   const source = fullDescription ? "description" : "snippet";
@@ -116,6 +125,8 @@ export function buildJobRequirementPrompt({
     "Rules:",
     "- hardSkills: required technical concepts, methods, frameworks, domains, and practices.",
     "- tools: software, platforms, programming languages, libraries, databases, operating systems, and named products.",
+    "- Only include required hard skills and required tools in hardSkills/tools.",
+    "- Put optional, preferred, advantage, nice-to-have, or big-plus items in optionalHardSkills/optionalTools instead of hardSkills/tools.",
     "- softSkills: interpersonal or work-style requirements only.",
     "- Do not put certifications into hardSkills or tools. SkillBridge V1 does not use certifications for gap scoring.",
     "- Preserve exact tool names when visible.",
@@ -126,6 +137,8 @@ export function buildJobRequirementPrompt({
     "{",
     '  "hardSkills": string[],',
     '  "tools": string[],',
+    '  "optionalHardSkills": string[],',
+    '  "optionalTools": string[],',
     '  "softSkills": string[],',
     '  "education": string,',
     '  "experience": string,',
@@ -161,6 +174,8 @@ export function buildBatchJobRequirementPrompt(jobsWithText = []) {
     "- Return one result for every input job id.",
     "- hardSkills: required technical concepts, methods, frameworks, domains, and practices.",
     "- tools: software, platforms, programming languages, libraries, databases, operating systems, and named products.",
+    "- Only include required hard skills and required tools in hardSkills/tools.",
+    "- Put optional, preferred, advantage, nice-to-have, or big-plus items in optionalHardSkills/optionalTools instead of hardSkills/tools.",
     "- softSkills: interpersonal or work-style requirements only.",
     "- Do not put certifications into hardSkills or tools. SkillBridge V1 does not use certifications for gap scoring.",
     "- Preserve exact tool names when visible.",
@@ -174,6 +189,8 @@ export function buildBatchJobRequirementPrompt(jobsWithText = []) {
     '      "id": string,',
     '      "hardSkills": string[],',
     '      "tools": string[],',
+    '      "optionalHardSkills": string[],',
+    '      "optionalTools": string[],',
     '      "softSkills": string[],',
     '      "education": string,',
     '      "experience": string,',
@@ -189,14 +206,20 @@ export function buildBatchJobRequirementPrompt(jobsWithText = []) {
 }
 
 export function buildFallbackRequirementProfile(job, sourceText = getBestJobDescription(job)) {
-  const skills = extractJobSkills(`${job.title || ""} ${sourceText.text}`);
+  const { requiredText, optionalText } = splitRequiredAndOptionalText(`${job.title || ""} ${sourceText.text}`);
+  const skills = extractJobSkills(requiredText);
+  const optionalSkills = extractJobSkills(optionalText).filter((skill) => !hasSkill(skills, skill));
   const tools = skills.filter((skill) => toolNames.has(skill));
   const hardSkills = skills.filter((skill) => !toolNames.has(skill));
+  const optionalTools = optionalSkills.filter((skill) => toolNames.has(skill));
+  const optionalHardSkills = optionalSkills.filter((skill) => !toolNames.has(skill));
 
   return {
     hardSkills,
     tools,
     scoredSkills: skills,
+    optionalHardSkills,
+    optionalTools,
     softSkills: [],
     education: "",
     experience: "",
@@ -210,13 +233,18 @@ export function buildFallbackRequirementProfile(job, sourceText = getBestJobDesc
 
 function withRequirementDefaults(profile, { sourceText, extractor }) {
   const safeProfile = profile && typeof profile === "object" ? profile : {};
-  const hardSkills = toList(safeProfile.hardSkills);
-  const tools = toList(safeProfile.tools);
+  const optionalHardSkills = unique(toList(safeProfile.optionalHardSkills));
+  const optionalTools = unique(toList(safeProfile.optionalTools));
+  const optionalSkillKeys = new Set([...optionalHardSkills, ...optionalTools].map(toSkillKey));
+  const hardSkills = unique(toList(safeProfile.hardSkills)).filter((skill) => !optionalSkillKeys.has(toSkillKey(skill)));
+  const tools = unique(toList(safeProfile.tools)).filter((skill) => !optionalSkillKeys.has(toSkillKey(skill)));
 
   return {
-    hardSkills: unique(hardSkills),
-    tools: unique(tools),
+    hardSkills,
+    tools,
     scoredSkills: unique([...hardSkills, ...tools]),
+    optionalHardSkills,
+    optionalTools,
     softSkills: unique(toList(safeProfile.softSkills)),
     education: typeof safeProfile.education === "string" ? safeProfile.education.trim() : "",
     experience: typeof safeProfile.experience === "string" ? safeProfile.experience.trim() : "",
@@ -250,6 +278,64 @@ function parseBatchRequirementResponse(payload, jobsWithText) {
 
 function getRequirementJobId(job, index) {
   return String(job.id || job.link || `${job.title || "job"}-${job.company || "company"}-${index}`);
+}
+
+function splitRequiredAndOptionalText(text) {
+  const source = String(text || "").trim();
+  if (!source) {
+    return {
+      requiredText: "",
+      optionalText: "",
+    };
+  }
+
+  const optionalMatches = collectOptionalRequirementMatches(source);
+  let requiredText = source;
+
+  for (const match of optionalMatches) {
+    requiredText = requiredText.replace(match.fullText, " ");
+  }
+
+  return {
+    requiredText: requiredText.replace(/\s+/g, " ").trim() || source,
+    optionalText: optionalMatches.map((match) => match.optionalText).join(" "),
+  };
+}
+
+function collectOptionalRequirementMatches(source) {
+  const matches = [];
+  const seen = new Set();
+  const patterns = [
+    /\(?optional\)?\s*[:\-]?\s*([^.;]+?)(?=\s+(?:google suite|slack|for senior|minimum|experience|requirements|software|tools?)\b|[.;]|$)/gi,
+    /experience with other web ui frameworks[\s\S]{0,240}?\bbig plus\b/gi,
+    /[^.!?]*\b(?:preferred|advantage|nice to have|nice-to-have|big plus|bonus)\b[^.!?]*/gi,
+  ];
+
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) {
+      const fullText = match[0]?.trim();
+      if (!fullText || seen.has(fullText.toLowerCase())) {
+        continue;
+      }
+
+      matches.push({
+        fullText,
+        optionalText: (match[1] || fullText).trim(),
+      });
+      seen.add(fullText.toLowerCase());
+    }
+  }
+
+  return matches;
+}
+
+function hasSkill(skills, candidate) {
+  const candidateKey = toSkillKey(candidate);
+  return skills.some((skill) => toSkillKey(skill) === candidateKey);
+}
+
+function toSkillKey(skill) {
+  return String(skill || "").trim().toLowerCase();
 }
 
 function toList(value) {

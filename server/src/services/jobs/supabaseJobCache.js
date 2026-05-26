@@ -1,5 +1,5 @@
 const DEFAULT_CACHE_TTL_MINUTES = 360;
-const DEFAULT_SKILL_EXTRACTOR_VERSION = "job-requirements-v2";
+const DEFAULT_SKILL_EXTRACTOR_VERSION = "job-requirements-v3";
 
 export function buildJobCacheKey({
   provider = "jooble",

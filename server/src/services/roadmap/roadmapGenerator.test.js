@@ -90,6 +90,172 @@ test("uses Gemini chat completions for roadmap generation when configured", asyn
   }
 });
 
+test("falls back to deterministic roadmap when Gemini returns skills outside the analysis gaps", async () => {
+  const previousEnv = captureEnv([
+    "GEMINI_API_KEY",
+    "GEMINI_BASE_URL",
+    "GEMINI_MODEL",
+  ]);
+  const geminiServer = http.createServer(async (request, response) => {
+    await readRequestBody(request);
+
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              overview: "Incorrect AI roadmap.",
+              items: [
+                {
+                  month: 1,
+                  skill: "Advanced Excel",
+                  title: "Advanced Excel sprint",
+                  what: "Build an Excel model.",
+                  why: "Excel appears in jobs.",
+                  when: "Month 1",
+                  howToStart: ["Open Excel"],
+                  successCriteria: "Excel file",
+                  objective: "Learn Excel",
+                  description: "Learn Excel",
+                  reason: "Excel appears in jobs.",
+                  deliverable: "Spreadsheet",
+                  tasks: ["Open Excel"],
+                  companyEvidence: ["Wrong Co"],
+                },
+              ],
+              assumptions: [],
+              confidence: 0.91,
+              source: "gemini",
+            }),
+          },
+        },
+      ],
+    }));
+  }).listen(0);
+
+  try {
+    process.env.GEMINI_API_KEY = "test-gemini-key";
+    process.env.GEMINI_BASE_URL = `http://127.0.0.1:${geminiServer.address().port}/v1beta/openai`;
+    process.env.GEMINI_MODEL = "gemini-2.5-flash-lite";
+
+    const roadmap = await generateRoadmap({
+      careerTarget: { role: "Data Analyst" },
+      skillProfile: { technicalSkills: ["Excel"] },
+      analysis: {
+        missingSkills: ["Power BI", "SQL"],
+        marketEvidence: {
+          skillDemand: { "Power BI": 4, SQL: 2 },
+          jobMatches: [
+            { company: "Analytics Sdn Bhd", missingSkills: ["Power BI", "SQL"] },
+            { company: "BI Malaysia", missingSkills: ["Power BI"] },
+          ],
+        },
+      },
+    });
+
+    assert.equal(roadmap.source, "local-rules");
+    assert.deepEqual(roadmap.items.map((item) => item.skill), ["Power BI", "SQL"]);
+    assert.deepEqual(roadmap.items[0].companyEvidence, ["Analytics Sdn Bhd", "BI Malaysia"]);
+  } finally {
+    restoreEnvSnapshot(previousEnv);
+    await closeServer(geminiServer);
+  }
+});
+
+test("keeps Gemini wording only when every roadmap item matches the analysis gaps", async () => {
+  const previousEnv = captureEnv([
+    "GEMINI_API_KEY",
+    "GEMINI_BASE_URL",
+    "GEMINI_MODEL",
+  ]);
+  const geminiServer = http.createServer(async (request, response) => {
+    await readRequestBody(request);
+
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              overview: "AI wording with wrong evidence.",
+              items: [
+                {
+                  month: 9,
+                  skill: "SQL",
+                  title: "SQL AI sprint",
+                  what: "Write SQL queries for hiring evidence.",
+                  why: "Wrong reason from unrelated evidence.",
+                  when: "Later",
+                  howToStart: ["Write one query"],
+                  successCriteria: "SQL portfolio artifact.",
+                  objective: "Practice SQL",
+                  description: "Practice SQL",
+                  reason: "Wrong reason from unrelated evidence.",
+                  deliverable: "SQL artifact",
+                  tasks: ["Write one query"],
+                  companyEvidence: ["Wrong Co"],
+                },
+                {
+                  month: 1,
+                  skill: "Power BI",
+                  title: "Power BI AI sprint",
+                  what: "Build a Power BI dashboard.",
+                  why: "Wrong reason from unrelated evidence.",
+                  when: "Later",
+                  howToStart: ["Open Power BI"],
+                  successCriteria: "Power BI dashboard.",
+                  objective: "Practice Power BI",
+                  description: "Practice Power BI",
+                  reason: "Wrong reason from unrelated evidence.",
+                  deliverable: "Power BI artifact",
+                  tasks: ["Open Power BI"],
+                  companyEvidence: ["Wrong Co"],
+                },
+              ],
+              assumptions: [],
+              confidence: 0.84,
+              source: "gemini",
+            }),
+          },
+        },
+      ],
+    }));
+  }).listen(0);
+
+  try {
+    process.env.GEMINI_API_KEY = "test-gemini-key";
+    process.env.GEMINI_BASE_URL = `http://127.0.0.1:${geminiServer.address().port}/v1beta/openai`;
+    process.env.GEMINI_MODEL = "gemini-2.5-flash-lite";
+
+    const roadmap = await generateRoadmap({
+      careerTarget: { role: "Data Analyst" },
+      skillProfile: { technicalSkills: ["Excel"] },
+      analysis: {
+        missingSkills: ["Power BI", "SQL"],
+        marketEvidence: {
+          skillDemand: { "Power BI": 4, SQL: 2 },
+          jobMatches: [
+            { company: "Analytics Sdn Bhd", missingSkills: ["Power BI", "SQL"] },
+            { company: "BI Malaysia", missingSkills: ["Power BI"] },
+          ],
+        },
+      },
+    });
+
+    assert.equal(roadmap.source, "gemini");
+    assert.deepEqual(roadmap.items.map((item) => item.skill), ["Power BI", "SQL"]);
+    assert.equal(roadmap.items[0].month, 1);
+    assert.equal(roadmap.items[0].what, "Build a Power BI dashboard.");
+    assert.match(roadmap.items[0].why, /4 matching jobs/);
+    assert.deepEqual(roadmap.items[0].companyEvidence, ["Analytics Sdn Bhd", "BI Malaysia"]);
+    assert.equal(roadmap.items[1].month, 2);
+  } finally {
+    restoreEnvSnapshot(previousEnv);
+    await closeServer(geminiServer);
+  }
+});
+
 test("generates roadmap items from deterministic missing skills and company evidence", () => {
   const roadmap = buildLocalRoadmap({
     careerTarget: { role: "Data Analyst" },

@@ -193,6 +193,33 @@ test("builds a pre-generation roadmap page view when analysis has not produced a
   assert.deepEqual(view.pathItems, []);
 });
 
+test("does not render stale roadmap items that no longer match current analysis gaps", () => {
+  const view = buildRoadmapPageView({
+    careerTarget: {
+      role: "Data Analyst",
+      region: "all-malaysia",
+    },
+    analysis: {
+      status: "ready",
+      readinessScore: 20,
+      missingSkills: ["Power BI", "SQL"],
+    },
+    roadmapPlan: {
+      overview: "Old plan from a previous analysis.",
+      source: "gemini",
+      assumptions: [],
+      items: [
+        { month: 1, skill: "Advanced Excel", title: "Old Excel item" },
+      ],
+    },
+  });
+
+  assert.equal(view.isGenerated, false);
+  assert.equal(view.heroTitle, "Roadmap not generated yet");
+  assert.match(view.emptyStateMessage, /Generate a fresh roadmap/);
+  assert.deepEqual(view.pathItems, []);
+});
+
 test("builds a no-gap roadmap result when analysis found no missing skills", () => {
   const view = buildRoadmapPageView({
     careerTarget: {

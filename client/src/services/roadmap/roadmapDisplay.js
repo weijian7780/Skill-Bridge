@@ -56,10 +56,16 @@ export function buildSequentialRoadmapPath(items = []) {
 }
 
 export function buildRoadmapPageView({ careerTarget, analysis, roadmapPlan }) {
-  const items = Array.isArray(roadmapPlan?.items) ? roadmapPlan.items : [];
+  const rawItems = Array.isArray(roadmapPlan?.items) ? roadmapPlan.items : [];
   const hasGeneratedPlan = Boolean(roadmapPlan);
+  const missingSkills = analysis?.missingSkills ?? [];
+  const planMatchesAnalysis = hasGeneratedPlan
+    ? roadmapItemsMatchMissingSkills(rawItems, missingSkills)
+    : false;
+  const items = planMatchesAnalysis ? rawItems : [];
   const hasNoGaps = hasGeneratedPlan && items.length === 0 && analysis?.status === "ready";
-  const isGenerated = items.length > 0 || hasNoGaps;
+  const isStalePlan = hasGeneratedPlan && !planMatchesAnalysis;
+  const isGenerated = !isStalePlan && (items.length > 0 || hasNoGaps);
   const role = careerTarget?.role || "Career";
   const region = careerTarget?.region || "selected market";
 
@@ -69,7 +75,7 @@ export function buildRoadmapPageView({ careerTarget, analysis, roadmapPlan }) {
       hasNoGaps: false,
       heroTitle: "Roadmap not generated yet",
       heroSubtitle: `${role} roles in ${region}`,
-      emptyStateMessage: buildEmptyStateMessage(analysis?.status),
+      emptyStateMessage: buildEmptyStateMessage(analysis?.status, { isStalePlan }),
       sourceLabel: "No generated plan",
       summaryCards: [],
       pathItems: [],
@@ -78,7 +84,6 @@ export function buildRoadmapPageView({ careerTarget, analysis, roadmapPlan }) {
     };
   }
 
-  const missingSkills = analysis?.missingSkills ?? [];
   const readinessScore = analysis?.readinessScore ?? 0;
 
   if (hasNoGaps) {
@@ -156,7 +161,11 @@ export function buildRoadmapGenerationPayload({ careerTarget, skillProfile, anal
   };
 }
 
-function buildEmptyStateMessage(status) {
+function buildEmptyStateMessage(status, { isStalePlan = false } = {}) {
+  if (isStalePlan) {
+    return "Generate a fresh roadmap from the current detected missing skills.";
+  }
+
   if (status === "needs_cv") {
     return "Upload and confirm your latest CV before generating a roadmap.";
   }
@@ -166,6 +175,24 @@ function buildEmptyStateMessage(status) {
   }
 
   return "Open the workspace and build a roadmap from the detected missing skills.";
+}
+
+function roadmapItemsMatchMissingSkills(items, missingSkills) {
+  if (missingSkills.length === 0) {
+    return items.length === 0;
+  }
+
+  if (items.length !== missingSkills.length) {
+    return false;
+  }
+
+  return missingSkills.every((skill, index) => skillKey(items[index]?.skill) === skillKey(skill));
+}
+
+function skillKey(skill) {
+  return String(skill || "")
+    .trim()
+    .toLowerCase();
 }
 
 function sourceLabel(source) {
