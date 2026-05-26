@@ -455,7 +455,7 @@ export function HomePage() {
               <label className="inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-2 font-label-sm text-label-sm text-on-surface-variant">
                 Industry
                 <select
-                  className="bg-transparent font-label-sm text-label-sm text-on-surface outline-none"
+                  className="border-0 bg-transparent p-0 font-label-sm text-label-sm text-on-surface shadow-none outline-none focus:border-0 focus:ring-0"
                   onChange={(event) => setDraft({ ...draft, industry: event.target.value })}
                   value={draft.industry}
                 >

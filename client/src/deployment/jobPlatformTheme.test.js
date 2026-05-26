@@ -13,3 +13,13 @@ test("uses an original light job-platform theme", async () => {
   assert.match(globalCss, /background:\s*#f4f7fb/);
   assert.doesNotMatch(globalCss, /background:\s*#051424/);
 });
+
+test("home workspace industry filter removes the native select border", async () => {
+  const homeSource = await readFile(new URL("../pages/HomePage.jsx", import.meta.url), "utf8");
+  const industryStart = homeSource.indexOf("Industry");
+  const industryEnd = homeSource.indexOf("</select>", industryStart);
+  const industryControl = homeSource.slice(industryStart, industryEnd);
+
+  assert.match(industryControl, /border-0/);
+  assert.match(industryControl, /focus:ring-0/);
+});
