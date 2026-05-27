@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { SignupPage } from "./pages/SignupPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { RoadmapPage } from "./pages/RoadmapPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />
       <Route path="/cv" element={<RequireAuth><Navigate to="/home" replace /></RequireAuth>} />
       <Route path="/target" element={<RequireAuth><Navigate to="/home" replace /></RequireAuth>} />

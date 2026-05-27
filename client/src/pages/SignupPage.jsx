@@ -3,9 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 
-export function LoginPage() {
+export function SignupPage() {
   const navigate = useNavigate();
-  const { authStatus, config, isAuthenticated, isLoading, login, loginWithGoogle } = useAuth();
+  const { authStatus, config, isAuthenticated, isLoading, loginWithGoogle, register } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formStatus, setFormStatus] = useState("");
@@ -17,17 +17,16 @@ export function LoginPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  async function handleLogin(event) {
+  async function handleCreateAccount(event) {
     event.preventDefault();
-    const result = await login({ email, password });
+    const result = await register({ email, password });
     setIsError(!result.ok);
-    setFormStatus(result.reason || "Signed in.");
+    setFormStatus(result.reason || "Account created.");
 
-    if (result.ok) {
+    if (result.ok && result.session) {
       navigate("/home");
     }
   }
-
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-on-surface">
@@ -72,8 +71,8 @@ export function LoginPage() {
           <section className="lg:col-span-5 flex justify-center lg:justify-end">
             <div className="w-full max-w-[440px] bg-surface-container border border-outline-variant rounded-xl p-md md:p-lg flex flex-col space-y-md shadow-xl shadow-slate-900/10">
               <div className="space-y-xs">
-                <h3 className="font-headline-md text-headline-md text-on-surface">Welcome back</h3>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">Access your personalized career roadmap.</p>
+                <h3 className="font-headline-md text-headline-md text-on-surface">Create an account</h3>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">Join SkillBridge to access your personalized career roadmap.</p>
               </div>
               <div className="flex flex-col space-y-sm">
                 <button className="flex items-center justify-center space-x-sm w-full py-sm bg-surface-container-high hover:bg-surface-variant border border-outline-variant rounded-lg transition-all active:scale-[0.98]" onClick={loginWithGoogle} type="button">
@@ -90,7 +89,7 @@ export function LoginPage() {
                 <span className="font-label-sm text-label-sm text-on-surface-variant px-base">OR</span>
                 <hr className="flex-grow border-outline-variant" />
               </div>
-              <form className="flex flex-col space-y-md" onSubmit={handleLogin}>
+              <form className="flex flex-col space-y-md" onSubmit={handleCreateAccount}>
                 <div className="space-y-xs">
                   <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="email">University Email</label>
                   <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-sm text-on-surface focus:outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/40" id="email" onChange={(event) => setEmail(event.target.value)} placeholder="student@university.edu.my" required type="email" value={email} />
@@ -99,25 +98,18 @@ export function LoginPage() {
                   <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="password">Password</label>
                   <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-sm text-on-surface focus:outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/40" id="password" minLength={6} onChange={(event) => setPassword(event.target.value)} placeholder="********" required type="password" value={password} />
                 </div>
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-xs cursor-pointer group">
-                    <input className="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-surface" type="checkbox" />
-                    <span className="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface">Remember me</span>
-                  </label>
-                  <a className="font-label-sm text-label-sm text-primary hover:underline" href="#">Forgot password?</a>
-                </div>
                 {(formStatus || authStatus) && (
                   <div className={`rounded-lg border px-sm py-sm font-body-sm text-body-sm ${(isError || !config.configured) ? "border-error/40 text-error" : "border-outline-variant text-on-surface-variant"}`}>
                     {formStatus || authStatus}
                   </div>
                 )}
                 <div className="flex flex-col space-y-sm pt-base">
-                <button className="w-full py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-secondary transition-all active:scale-[0.98]">
-                    Login
+                  <button className="w-full py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-secondary transition-all active:scale-[0.98]">
+                    Create Account
                   </button>
                   <div className="text-center pt-xs">
-                    <span className="font-body-sm text-body-sm text-on-surface-variant">Don't have an account? </span>
-                    <Link to="/signup" className="font-label-sm text-label-sm text-primary hover:underline">Sign up</Link>
+                    <span className="font-body-sm text-body-sm text-on-surface-variant">Already have an account? </span>
+                    <Link to="/" className="font-label-sm text-label-sm text-primary hover:underline">Log in</Link>
                   </div>
                 </div>
               </form>

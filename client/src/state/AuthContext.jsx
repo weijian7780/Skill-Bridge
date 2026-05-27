@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
   const config = useMemo(() => getSupabaseConfig(), []);
   const storage = browserStorage();
   const [session, setSession] = useState(() => loadStoredSession(storage));
-  const [authStatus, setAuthStatus] = useState(config.configured ? "Ready" : config.reason);
+  const [authStatus, setAuthStatus] = useState(config.configured ? "" : config.reason);
   const [isLoading, setIsLoading] = useState(true);
 
   const supabaseConnection = useMemo(() => createSupabaseConnection({
@@ -140,9 +140,17 @@ export function AuthProvider({ children }) {
 
     setAuthStatus("Creating account...");
     const result = await signUpWithPassword({ config, email, password });
+    
     if (!result.ok) {
       setAuthStatus(result.reason);
       return result;
+    }
+
+    // Detect fake user returned by Supabase to prevent email enumeration
+    if (result.user && result.user.identities && result.user.identities.length === 0) {
+      const reason = "An account with this email already exists.";
+      setAuthStatus(reason);
+      return { ok: false, reason };
     }
 
     if (result.session) {
