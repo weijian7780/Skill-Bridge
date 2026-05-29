@@ -56,6 +56,9 @@ function failedProfileResult(error, fallbackReason, extra = {}) {
 
 export function buildStudentProfileSnapshot({
   userId,
+  university = "UMS",
+  studyYear = "Year 3",
+  program = "Computer Science",
   careerTarget,
   skillProfile,
   missingSkills,
@@ -66,9 +69,9 @@ export function buildStudentProfileSnapshot({
 }) {
   return {
     user_id: userId,
-    university: "",
-    study_year: "",
-    program: "",
+    university: university,
+    study_year: studyYear,
+    program: program,
     career_target: {
       role: careerTarget?.role ?? "",
       region: careerTarget?.region ?? "",

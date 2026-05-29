@@ -79,7 +79,7 @@ export function ApplicantsPage() {
           <select 
             value={jobFilter}
             onChange={e => setJobFilter(e.target.value)}
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-xs text-on-surface font-label-sm focus:outline-none focus:border-primary"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg pl-sm pr-xl py-sm text-on-surface font-label-sm focus:outline-none focus:border-primary cursor-pointer min-w-[140px]"
           >
             <option value="all">All Jobs</option>
             {uniqueJobs.map(job => (
@@ -90,7 +90,7 @@ export function ApplicantsPage() {
           <select 
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-xs text-on-surface font-label-sm focus:outline-none focus:border-primary"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg pl-sm pr-xl py-sm text-on-surface font-label-sm focus:outline-none focus:border-primary cursor-pointer min-w-[140px]"
           >
             <option value="all">All Statuses</option>
             <option value="pending">Pending</option>

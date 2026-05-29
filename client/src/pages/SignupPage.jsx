@@ -19,7 +19,7 @@ export function SignupPage() {
 
   async function handleCreateAccount(event) {
     event.preventDefault();
-    const result = await register({ email, password, metadata: { role: "student" } });
+    const result = await register({ email, password, metadata: { role: "student", setup_completed: false } });
     setIsError(!result.ok);
     setFormStatus(result.reason || "Account created.");
 

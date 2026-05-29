@@ -84,6 +84,7 @@ export function AppStateProvider({ children }) {
   const [loadedJobTargetKey, setLoadedJobTargetKey] = useState("");
   const [jobStatus, setJobStatus] = useState("Job API key not configured");
   const [roadmapPlan, setRoadmapPlan] = useState(null);
+  const [academicProfile, setAcademicProfile] = useState({ university: "UMS", studyYear: "Year 3", program: "Computer Science" });
   const [syncStatus, setSyncStatus] = useState("Sign in to sync profile data.");
   const [loadedProfileFor, setLoadedProfileFor] = useState("");
   const skipProfileSaveFor = useRef("");
@@ -126,6 +127,11 @@ export function AppStateProvider({ children }) {
         setCareerTargetState(toCareerTarget(result.snapshot));
         setSkillProfile(toSkillProfile(result.snapshot));
         setCvDocument(toCvDocument(result.snapshot));
+        setAcademicProfile({
+          university: result.snapshot.university || "UMS",
+          studyYear: result.snapshot.study_year || "Year 3",
+          program: result.snapshot.program || "Computer Science",
+        });
         setSyncStatus("Supabase profile loaded.");
         skipProfileSaveFor.current = userId;
         setLoadedProfileFor(userId);
@@ -169,6 +175,9 @@ export function AppStateProvider({ children }) {
     async function saveSnapshot() {
       const snapshot = buildStudentProfileSnapshot({
         userId,
+        university: academicProfile.university,
+        studyYear: academicProfile.studyYear,
+        program: academicProfile.program,
         careerTarget,
         skillProfile,
         missingSkills,
@@ -202,13 +211,14 @@ export function AppStateProvider({ children }) {
       cancelled = true;
     };
   }, [
+    academicProfile,
+    analysis.readinessScore,
     careerTarget,
     cvDocument,
+    expireSession,
     loadedProfileFor,
     missingSkills,
     roadmap,
-    analysis.readinessScore,
-    expireSession,
     session?.user?.id,
     skillProfile,
     supabaseConnection.client,
@@ -224,6 +234,8 @@ export function AppStateProvider({ children }) {
   }
 
   const value = {
+    academicProfile,
+    setAcademicProfile,
     careerTarget,
     setCareerTarget,
     cvDocument,

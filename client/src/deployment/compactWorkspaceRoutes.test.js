@@ -12,7 +12,7 @@ test("legacy target, cv, and analysis routes enter the compact home workspace", 
   for (const path of ["/target", "/cv", "/analysis"]) {
     assert.match(
       appSource,
-      new RegExp(`<Route path="${path}" element=\\{<RequireAuth><RequireRole role="student"><Navigate to="/home" replace /></RequireRole></RequireAuth>\\}`),
+      new RegExp(`<Route path="${path}" element=\\{<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="/home" replace /><\\/RequireSetup><\\/RequireRole><\\/RequireAuth>\\}`),
     );
   }
 });

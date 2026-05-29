@@ -250,25 +250,20 @@ export function HomePage() {
 
   return (
     <PageShell>
-      <main className="pt-20 pb-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto space-y-md">
-        {/* Header Search Section */}
-        <section className="bg-surface-container border border-outline-variant rounded-xl p-sm md:p-md shadow-sm">
-          <div className="mb-sm flex flex-col gap-xs md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider">SkillBridge workspace</p>
-              <h1 className="font-headline-lg md:font-headline-xl text-headline-lg md:text-headline-xl text-on-surface font-extrabold tracking-tight">
-                Find jobs that match your CV
-              </h1>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Hello, {displayName}. Search a target, upload a CV, and explore matches in a premium split-pane workspace.
-              </p>
-            </div>
-            <span className="inline-flex w-fit items-center gap-xs rounded-full bg-primary-container px-3 py-2 font-label-sm text-label-sm text-primary">
-              <Icon name="location_on" className="text-[18px]" />
-              {regionOption.label}
-            </span>
-          </div>
+      <main className="pt-20 pb-8 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto space-y-md">
+        {/* Page Title */}
+        <div className="mb-md">
+          <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider">SkillBridge workspace</p>
+          <h1 className="font-headline-lg md:font-headline-xl text-headline-lg md:text-headline-xl text-on-surface font-extrabold tracking-tight">
+            Find jobs that match your CV
+          </h1>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            Hello, {displayName}. Search a target, upload a CV, and explore matches in a premium split-pane workspace.
+          </p>
+        </div>
 
+        {/* Header Search Section (Sticky) */}
+        <section className="sticky top-20 z-20 bg-surface-container border border-outline-variant rounded-xl p-sm shadow-sm">
           <form className="grid grid-cols-1 gap-sm lg:grid-cols-[minmax(0,1.6fr)_minmax(220px,0.65fr)_auto]" onSubmit={saveTargetAndSearch}>
             <label className="relative block">
               <span className="sr-only">Target role</span>

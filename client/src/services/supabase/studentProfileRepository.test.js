@@ -68,9 +68,9 @@ test("does not write prototype profile metrics when calculated values are missin
     cvDocument: null,
   });
 
-  assert.equal(snapshot.university, "");
-  assert.equal(snapshot.study_year, "");
-  assert.equal(snapshot.program, "");
+  assert.equal(snapshot.university, "UMS");
+  assert.equal(snapshot.study_year, "Year 3");
+  assert.equal(snapshot.program, "Computer Science");
   assert.equal(snapshot.readiness_score, 0);
   assert.equal(snapshot.roadmap_progress, 0);
 });

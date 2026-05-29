@@ -8,6 +8,8 @@ import { RoadmapPage } from "./pages/RoadmapPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { JobApplyPage } from "./pages/JobApplyPage.jsx";
 import { StudentApplicationsPage } from "./pages/StudentApplicationsPage.jsx";
+import { StudentSetupPage } from "./pages/StudentSetupPage.jsx";
+import { SettingsPage } from "./pages/SettingsPage.jsx";
 import { EmployerApp } from "./pages/EmployerApp.jsx";
 import { useAuth } from "./state/AuthContext.jsx";
 
@@ -45,6 +47,23 @@ function RequireRole({ role, children }) {
   return children;
 }
 
+function RequireSetup({ children, invert = false }) {
+  const { session } = useAuth();
+  const userRole = resolveUserRole(session);
+  const isSetupCompleted = session?.user?.user_metadata?.setup_completed === true;
+
+  if (userRole === "student") {
+    if (invert && isSetupCompleted) {
+      return <Navigate to="/home" replace />;
+    }
+    if (!invert && !isSetupCompleted) {
+      return <Navigate to="/student/setup" replace />;
+    }
+  }
+
+  return children;
+}
+
 function AuthRedirect() {
   const { isAuthenticated, isLoading, session } = useAuth();
 
@@ -58,6 +77,9 @@ function AuthRedirect() {
 
   if (isAuthenticated) {
     const role = resolveUserRole(session);
+    if (role === "student" && session?.user?.user_metadata?.setup_completed !== true) {
+      return <Navigate to="/student/setup" replace />;
+    }
     return <Navigate to={role === "employer" ? "/employer/dashboard" : "/home"} replace />;
   }
 
@@ -73,15 +95,17 @@ export default function App() {
       <Route path="/signup/employer" element={<SignupEmployerPage />} />
 
       {/* Student routes */}
-      <Route path="/home" element={<RequireAuth><RequireRole role="student"><HomePage /></RequireRole></RequireAuth>} />
-      <Route path="/cv" element={<RequireAuth><RequireRole role="student"><Navigate to="/home" replace /></RequireRole></RequireAuth>} />
-      <Route path="/target" element={<RequireAuth><RequireRole role="student"><Navigate to="/home" replace /></RequireRole></RequireAuth>} />
-      <Route path="/analysis" element={<RequireAuth><RequireRole role="student"><Navigate to="/home" replace /></RequireRole></RequireAuth>} />
-      <Route path="/roadmap" element={<RequireAuth><RequireRole role="student"><RoadmapPage /></RequireRole></RequireAuth>} />
-      <Route path="/profile" element={<RequireAuth><RequireRole role="student"><ProfilePage /></RequireRole></RequireAuth>} />
-      <Route path="/jobs" element={<RequireAuth><RequireRole role="student"><Navigate to="/home#jobs" replace /></RequireRole></RequireAuth>} />
-      <Route path="/applications" element={<RequireAuth><RequireRole role="student"><StudentApplicationsPage /></RequireRole></RequireAuth>} />
-      <Route path="/jobs/:id/apply" element={<RequireAuth><RequireRole role="student"><JobApplyPage /></RequireRole></RequireAuth>} />
+      <Route path="/student/setup" element={<RequireAuth><RequireRole role="student"><RequireSetup invert><StudentSetupPage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/home" element={<RequireAuth><RequireRole role="student"><RequireSetup><HomePage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/cv" element={<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="/home" replace /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/target" element={<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="/home" replace /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/analysis" element={<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="/home" replace /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/roadmap" element={<RequireAuth><RequireRole role="student"><RequireSetup><RoadmapPage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth><RequireRole role="student"><RequireSetup><ProfilePage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/settings" element={<RequireAuth><RequireRole role="student"><RequireSetup><SettingsPage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/jobs" element={<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="/home#jobs" replace /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/applications" element={<RequireAuth><RequireRole role="student"><RequireSetup><StudentApplicationsPage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/jobs/:id/apply" element={<RequireAuth><RequireRole role="student"><RequireSetup><JobApplyPage /></RequireSetup></RequireRole></RequireAuth>} />
 
       {/* Employer routes */}
       <Route path="/employer/*" element={<RequireAuth><RequireRole role="employer"><EmployerApp /></RequireRole></RequireAuth>} />

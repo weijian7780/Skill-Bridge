@@ -92,7 +92,7 @@ export function StudentApplicationsPage() {
               <div className="bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm h-80 flex flex-col">
                 <h3 className="font-headline-sm text-on-surface mb-md">Application Activity (Last 7 Days)</h3>
                 <div className="flex-1 w-full min-h-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={0} minWidth={0}>
                     <BarChart data={appsOverTime}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                       <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
@@ -108,7 +108,7 @@ export function StudentApplicationsPage() {
               <div className="bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm h-80 flex flex-col">
                 <h3 className="font-headline-sm text-on-surface mb-md">Application Statuses</h3>
                 <div className="flex-1 w-full min-h-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={0} minWidth={0}>
                     <PieChart>
                       <Pie
                         data={statusDistribution}

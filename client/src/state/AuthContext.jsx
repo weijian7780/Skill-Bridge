@@ -10,6 +10,7 @@ import {
   signInWithPassword,
   signOut,
   signUpWithPassword,
+  updateUserMetadata,
 } from "../services/supabase/supabaseAuth.js";
 
 const AuthContext = createContext(null);
@@ -161,6 +162,22 @@ export function AuthProvider({ children }) {
     return result;
   }, [completeSession, config]);
 
+  const updateMetadata = useCallback(async (data) => {
+    if (!config.configured || !session?.accessToken) {
+      return { ok: false, reason: "Not authenticated" };
+    }
+    const result = await updateUserMetadata({ config, accessToken: session.accessToken, data });
+    if (result.ok && result.user) {
+      setSession(current => {
+        if (!current) return current;
+        const newSession = { ...current, user: result.user };
+        saveStoredSession(storage, newSession);
+        return newSession;
+      });
+    }
+    return result;
+  }, [config, session?.accessToken, storage]);
+
   const loginWithGoogle = useCallback(() => {
     if (!config.configured || typeof window === "undefined") {
       setAuthStatus(config.reason);
@@ -201,6 +218,7 @@ export function AuthProvider({ children }) {
     register,
     session,
     supabaseConnection,
+    updateMetadata,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

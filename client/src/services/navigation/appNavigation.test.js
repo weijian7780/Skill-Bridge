@@ -11,7 +11,7 @@ test("main navigation exposes the compact workspace routes", () => {
 
   assert.ok(appNavigationItems.some((item) => item.to === "/home" && item.label === "Home"));
   assert.ok(appNavigationItems.some((item) => item.to === "/roadmap" && item.label === "Roadmap"));
-  assert.ok(appNavigationItems.some((item) => item.to === "/applications" && item.label === "Apps"));
+  assert.ok(appNavigationItems.some((item) => item.to === "/applications" && item.label === "Applications"));
   assert.ok(appNavigationItems.some((item) => item.to === "/profile" && item.label === "Profile"));
   assert.ok(!appNavigationItems.some((item) => item.label === "Jobs"));
 });

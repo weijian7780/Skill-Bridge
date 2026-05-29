@@ -150,6 +150,30 @@ export async function getCurrentUser({ config, accessToken, fetchImpl = fetch })
   };
 }
 
+export async function updateUserMetadata({ config, accessToken, data, fetchImpl = fetch }) {
+  const response = await fetchImpl(authUrl(config.url, "user"), {
+    method: "PUT",
+    headers: authHeaders(config, accessToken),
+    body: JSON.stringify({ data }),
+  });
+
+  const body = await response.json();
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      reason: body?.msg ?? body?.message ?? "Could not update user metadata.",
+      user: null,
+    };
+  }
+
+  return {
+    ok: true,
+    reason: "",
+    user: body,
+  };
+}
+
 export function buildGoogleOAuthUrl({ config, redirectTo }) {
   return authUrl(config.url, "authorize", {
     provider: "google",

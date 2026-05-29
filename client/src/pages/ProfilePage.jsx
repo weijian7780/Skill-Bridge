@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { ConfirmModal } from "../components/ConfirmModal.jsx";
 import { getRegionOption } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
@@ -8,12 +10,18 @@ import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadius
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { analysis, careerTarget, cvDocument, skillProfile, missingSkills, roadmap, syncStatus } = useAppState();
+  const { academicProfile, analysis, careerTarget, cvDocument, skillProfile, missingSkills, roadmap, syncStatus } = useAppState();
   const { config, logout, session } = useAuth();
-  const displayName = session?.user?.email?.split("@")[0] ?? "Student";
+  
+  const [showSignOut, setShowSignOut] = useState(false);
+  
+  const displayName = session?.user?.user_metadata?.display_name ?? session?.user?.email?.split("@")[0] ?? "Student";
   const gaps = missingSkills;
   const regionLabel = getRegionOption(careerTarget.region).label;
-  const educationSummary = skillProfile.education || "No education saved yet";
+  
+  const educationSummary = academicProfile 
+    ? `${academicProfile.university} • ${academicProfile.studyYear}, ${academicProfile.program}` 
+    : (skillProfile.education || "No education saved yet");
   const readinessLabel = analysis.status === "ready" ? "Live Match" : "Pending";
   const completedRoadmapCount = roadmap.filter((item) => {
     const status = String(item.status || "").toLowerCase();
@@ -158,16 +166,26 @@ export function ProfilePage() {
         </article>
 
         <section className="pt-lg space-y-sm">
-          <button className="w-full flex items-center gap-md p-md hover:bg-surface-container rounded-xl transition-colors text-on-surface border border-transparent hover:border-outline-variant">
+          <Link to="/settings" className="w-full flex items-center gap-md p-md hover:bg-surface-container rounded-xl transition-colors text-on-surface border border-transparent hover:border-outline-variant">
             <Icon name="settings" />
             <span className="font-label-md text-label-md">Account Settings</span>
-          </button>
-          <button className="w-full flex items-center gap-md p-md hover:bg-error-container/20 rounded-xl transition-colors text-error border border-transparent hover:border-error/30" onClick={handleSignOut}>
+          </Link>
+          <button className="w-full flex items-center gap-md p-md hover:bg-error-container/20 rounded-xl transition-colors text-error border border-transparent hover:border-error/30" onClick={() => setShowSignOut(true)}>
             <Icon name="logout" />
             <span className="font-label-md text-label-md">Sign Out</span>
           </button>
         </section>
       </main>
+
+      <ConfirmModal
+        isOpen={showSignOut}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        isDestructive={true}
+        onConfirm={handleSignOut}
+        onCancel={() => setShowSignOut(false)}
+      />
     </PageShell>
   );
 }

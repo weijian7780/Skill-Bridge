@@ -8,7 +8,7 @@ const appSource = readFileSync(new URL("../App.jsx", import.meta.url), "utf8")
 test("/jobs redirects students to the home jobs feed anchor", () => {
   assert.match(
     appSource,
-    /<Route path="\/jobs" element=\{<RequireAuth><RequireRole role="student"><Navigate to="\/home#jobs" replace \/><\/RequireRole><\/RequireAuth>\}/,
+    /<Route path="\/jobs" element=\{<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="\/home#jobs" replace \/><\/RequireSetup><\/RequireRole><\/RequireAuth>\}/,
   );
 });
 

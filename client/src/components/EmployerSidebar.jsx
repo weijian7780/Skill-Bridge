@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "./Icon.jsx";
+import { ConfirmModal } from "./ConfirmModal.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 
 const navItems = [
@@ -12,6 +14,7 @@ const navItems = [
 export function EmployerSidebar() {
   const { logout, session } = useAuth();
   const navigate = useNavigate();
+  const [showSignOut, setShowSignOut] = useState(false);
   const companyName = session?.user?.user_metadata?.company_name ?? "My Company";
 
   async function handleLogout() {
@@ -65,13 +68,23 @@ export function EmployerSidebar() {
       {/* Footer */}
       <div className="px-sm py-md border-t border-white/10">
         <button
-          onClick={handleLogout}
-          className="flex items-center space-x-sm px-sm py-[10px] rounded-lg text-slate-400 hover:bg-white/5 hover:text-red-400 transition-all w-full text-[14px] font-medium"
+          onClick={() => setShowSignOut(true)}
+          className="flex items-center space-x-sm px-sm py-[10px] rounded-lg text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all w-full text-[14px] font-medium"
         >
           <Icon name="logout" className="text-[20px]" />
           <span>Sign Out</span>
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showSignOut}
+        title="Sign Out"
+        message="Are you sure you want to sign out of the Employer Portal?"
+        confirmText="Sign Out"
+        isDestructive={true}
+        onConfirm={handleLogout}
+        onCancel={() => setShowSignOut(false)}
+      />
     </aside>
   );
 }
