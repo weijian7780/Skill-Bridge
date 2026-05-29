@@ -117,3 +117,148 @@ a {
   border-radius: inherit;
   background: #0b63ce;
 }
+
+/* Split-pane layout */
+.split-pane {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  min-height: 70vh;
+}
+
+@media (min-width: 1024px) {
+  .split-pane {
+    grid-template-columns: minmax(360px, 1fr) minmax(420px, 1.4fr);
+    gap: 1px;
+  }
+}
+
+.split-pane-list {
+  overflow-y: auto;
+  max-height: 80vh;
+  scrollbar-width: thin;
+  scrollbar-color: #d7e2f0 transparent;
+}
+
+.split-pane-detail {
+  overflow-y: auto;
+  max-height: 80vh;
+  scrollbar-width: thin;
+  scrollbar-color: #d7e2f0 transparent;
+  border-left: 1px solid #d7e2f0;
+}
+
+@media (max-width: 1023px) {
+  .split-pane-detail {
+    border-left: none;
+  }
+}
+
+.split-pane-list::-webkit-scrollbar,
+.split-pane-detail::-webkit-scrollbar {
+  width: 6px;
+}
+
+.split-pane-list::-webkit-scrollbar-thumb,
+.split-pane-detail::-webkit-scrollbar-thumb {
+  background: #d7e2f0;
+  border-radius: 3px;
+}
+
+/* Job card active state */
+.job-card-active {
+  border-color: #0b63ce !important;
+  background: #edf3fb !important;
+  box-shadow: 0 0 0 2px rgba(11, 99, 206, 0.15);
+}
+
+/* Mobile overlay */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #f4f7fb;
+  overflow-y: auto;
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 1024px) {
+  .detail-overlay {
+    display: none;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Detail panel sections */
+.detail-section {
+  border-top: 1px solid #d7e2f0;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.detail-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* Save button heart */
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 1px solid #d7e2f0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.save-btn-active {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* Analysis result card inside detail panel */
+.analysis-result {
+  background: linear-gradient(135deg, #edf3fb 0%, #dff7ea 100%);
+  border: 1px solid #b8e6d4;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.analysis-result-empty {
+  background: linear-gradient(135deg, #edf3fb 0%, #fff1e7 100%);
+  border-color: #fed7aa;
+}
+
+/* Match score ring (small) */
+.match-ring {
+  display: grid;
+  place-content: center;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 9999px;
+  background:
+    radial-gradient(closest-side, #ffffff 75%, transparent 0 100%),
+    conic-gradient(#0b63ce calc(var(--score) * 1%), #d7e2f0 0);
+  flex-shrink: 0;
+}

@@ -12,7 +12,7 @@ import { useAuth } from "./AuthContext.jsx";
 const AppStateContext = createContext(null);
 
 const initialTarget = {
-  role: "Data Analyst",
+  role: "",
   region: "all-malaysia",
 };
 
@@ -29,7 +29,7 @@ const initialSkillProfile = {
 function toCareerTarget(snapshot) {
   const target = snapshot?.career_target ?? {};
   return {
-    role: target.role ?? initialTarget.role,
+    role: initialTarget.role,
     region: normaliseRegionId(target.region ?? initialTarget.region),
   };
 }

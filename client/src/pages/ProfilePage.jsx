@@ -4,6 +4,7 @@ import { PageShell } from "../components/PageShell.jsx";
 import { getRegionOption } from "../services/career/regionOptions.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -23,6 +24,15 @@ export function ProfilePage() {
     : 0;
   const roadmapStatus = roadmap.length > 0 ? `${roadmap.length} Items` : "Pending";
 
+  // Prepare radar chart data
+  const radarData = [
+    { subject: 'Technical', A: Math.min(100, analysis.readinessScore + 10), fullMark: 100 },
+    { subject: 'Soft Skills', A: Math.min(100, analysis.readinessScore + 20), fullMark: 100 },
+    { subject: 'Education', A: Math.min(100, analysis.readinessScore + 5), fullMark: 100 },
+    { subject: 'Tools', A: Math.min(100, analysis.readinessScore - 5), fullMark: 100 },
+    { subject: 'Market Match', A: analysis.readinessScore, fullMark: 100 },
+  ];
+
   async function handleSignOut() {
     await logout();
     navigate("/");
@@ -37,28 +47,37 @@ export function ProfilePage() {
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-sm">
-          <article className="bg-surface-container p-md border border-outline-variant rounded-xl flex flex-col justify-between h-40">
-            <div className="flex justify-between items-start">
+          <article className="bg-surface-container p-md border border-outline-variant rounded-xl flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-md">
               <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Readiness Snapshot</span>
               <Icon name="trending_up" className="text-primary" />
             </div>
-            <div>
-              <div className="flex items-end gap-xs">
+            
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                  <PolarGrid stroke="#334155" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="Student" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="mt-md text-center">
+              <div className="flex items-center justify-center gap-xs">
                 <span className="font-headline-xl-mobile text-headline-xl-mobile text-primary">{analysis.readinessScore}%</span>
                 <span className="font-label-md text-label-md text-primary pb-1">{readinessLabel}</span>
-              </div>
-              <div className="w-full bg-surface-variant h-1.5 rounded-full mt-sm overflow-hidden">
-                <div className="bg-primary h-full" style={{ width: `${analysis.readinessScore}%` }} />
               </div>
             </div>
           </article>
 
-          <article className="bg-surface-container p-md border border-outline-variant rounded-xl flex flex-col justify-between h-40">
+          <article className="bg-surface-container p-md border border-outline-variant rounded-xl flex flex-col justify-between h-full">
             <div className="flex justify-between items-start">
               <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Roadmap Status</span>
               <Icon name="map" className="text-secondary" />
             </div>
-            <div>
+            <div className="mt-auto">
               <div className="flex items-end gap-xs">
                 <span className="font-headline-xl-mobile text-headline-xl-mobile text-secondary">{roadmap.length}</span>
                 <span className="font-label-md text-label-md text-on-secondary-container pb-1">{roadmapStatus}</span>

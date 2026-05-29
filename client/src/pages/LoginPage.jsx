@@ -3,9 +3,14 @@ import { useNavigate, Link } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 
+function roleRedirectPath(session) {
+  const role = session?.user?.user_metadata?.role;
+  return role === "employer" ? "/employer/dashboard" : "/home";
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
-  const { authStatus, config, isAuthenticated, isLoading, login, loginWithGoogle } = useAuth();
+  const { authStatus, config, isAuthenticated, isLoading, login, loginWithGoogle, session } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formStatus, setFormStatus] = useState("");
@@ -13,9 +18,9 @@ export function LoginPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate("/home");
+      navigate(roleRedirectPath(session));
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, session]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -24,7 +29,8 @@ export function LoginPage() {
     setFormStatus(result.reason || "Signed in.");
 
     if (result.ok) {
-      navigate("/home");
+      const role = result.session?.user?.user_metadata?.role;
+      navigate(role === "employer" ? "/employer/dashboard" : "/home");
     }
   }
 

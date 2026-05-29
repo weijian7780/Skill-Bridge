@@ -91,7 +91,7 @@ test("shows no requirements when loaded jobs expose no scored skills", () => {
   assert.match(display.priorityInterpretation, /broader target role/);
 });
 
-test("explains the calculated score using top company requirement matches", () => {
+test("explains the calculated score using top requirement matches", () => {
   const display = buildDiagnosticScoreDisplay({
     analysis: {
       status: "ready",
@@ -116,7 +116,7 @@ test("explains the calculated score using top company requirement matches", () =
 
   assert.equal(display.value, "50%");
   assert.equal(display.isCalculated, true);
-  assert.equal(display.formula, "Average match across the top 2 company requirement matches.");
+  assert.equal(display.formula, "Average match across the top 2 requirement matches.");
 });
 
 test("labels calculated scores as partial when some job requirements came from snippets", () => {
@@ -142,7 +142,7 @@ test("labels calculated scores as partial when some job requirements came from s
     },
   });
 
-  assert.equal(display.formula, "Average partial match across the top 1 company requirement match because 1 job only exposed a short requirement snippet.");
+  assert.equal(display.formula, "Average partial match across the top 1 requirement match because 1 job only exposed a short requirement snippet.");
 });
 
 test("summarizes what the market evidence says about the student's CV", () => {

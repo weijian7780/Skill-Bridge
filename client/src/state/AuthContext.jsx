@@ -130,7 +130,7 @@ export function AuthProvider({ children }) {
     return completeSession(result.session);
   }, [completeSession, config]);
 
-  const register = useCallback(async ({ email, password }) => {
+  const register = useCallback(async ({ email, password, metadata }) => {
     if (!config.configured) {
       return {
         ok: false,
@@ -139,7 +139,7 @@ export function AuthProvider({ children }) {
     }
 
     setAuthStatus("Creating account...");
-    const result = await signUpWithPassword({ config, email, password });
+    const result = await signUpWithPassword({ config, email, password, metadata });
     
     if (!result.ok) {
       setAuthStatus(result.reason);

@@ -7,7 +7,7 @@ import {
   shouldShowCompanyMatchToggle,
 } from "./companyMatchDisplay.js";
 
-test("shows five company requirement matches by default and all matches after expansion", () => {
+test("shows five requirement matches by default and all matches after expansion", () => {
   const jobMatches = Array.from({ length: 10 }, (_, index) => ({
     id: `job-${index + 1}`,
     title: `Job ${index + 1}`,

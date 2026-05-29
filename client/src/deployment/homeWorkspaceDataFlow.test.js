@@ -18,15 +18,17 @@ test("home workspace job loader is not cancelled by its own output state changes
   assert.match(dependencyList, /jobTargetKey/);
 });
 
-test("home workspace places refresh jobs in the recommended matches header", () => {
+test("home workspace places refresh in the recommended header", () => {
   const marketDiagnosisStart = homeSource.indexOf("Market diagnosis");
-  const recommendedMatchesStart = homeSource.indexOf("Recommended matches");
-  const recommendedMatchesEnd = homeSource.indexOf("<EmptyMarketState", recommendedMatchesStart);
+  const recommendedHeaderStart = homeSource.indexOf("Recommended</p>");
+  const recommendedHeaderEnd = homeSource.indexOf("<EmptyMarketState", recommendedHeaderStart);
 
-  const marketDiagnosisSection = homeSource.slice(marketDiagnosisStart, recommendedMatchesStart);
-  const recommendedMatchesSection = homeSource.slice(recommendedMatchesStart, recommendedMatchesEnd);
+  const marketDiagnosisSection = homeSource.slice(marketDiagnosisStart, recommendedHeaderStart);
+  const recommendedMatchesSection = homeSource.slice(recommendedHeaderStart, recommendedHeaderEnd);
 
-  assert.doesNotMatch(marketDiagnosisSection, /Refresh jobs/);
-  assert.match(recommendedMatchesSection, /Refresh jobs/);
+  assert.doesNotMatch(marketDiagnosisSection, /Refresh/);
+  assert.match(recommendedMatchesSection, /Refresh/);
+  assert.match(recommendedMatchesSection, /Requirement matches/);
+  assert.match(recommendedMatchesSection, /Compared against your confirmed CV skills/);
   assert.match(recommendedMatchesSection, /Showing \{companyRequirementMatches\.length\} of \{allCompanyRequirementMatches\.length\}/);
 });

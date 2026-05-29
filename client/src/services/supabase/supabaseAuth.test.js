@@ -83,6 +83,59 @@ test("signs up with email and password through Supabase Auth REST", async () => 
   assert.equal(result.user.id, "user-123");
 });
 
+test("student signup sends role metadata to Supabase Auth", async () => {
+  const calls = [];
+  await signUpWithPassword({
+    config: {
+      url: "https://skillbridge.supabase.co",
+      publishableKey: "publishable-key",
+    },
+    email: "student@ums.edu.my",
+    password: "secret-password",
+    metadata: { role: "student" },
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { id: "user-123", email: "student@ums.edu.my" };
+        },
+      };
+    },
+  });
+
+  const body = JSON.parse(calls[0].options.body);
+  assert.equal(body.data.role, "student");
+});
+
+test("employer signup sends role and company_name metadata to Supabase Auth", async () => {
+  const calls = [];
+  await signUpWithPassword({
+    config: {
+      url: "https://skillbridge.supabase.co",
+      publishableKey: "publishable-key",
+    },
+    email: "hr@company.com",
+    password: "secret-password",
+    metadata: { role: "employer", company_name: "Acme Corp" },
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { id: "user-456", email: "hr@company.com" };
+        },
+      };
+    },
+  });
+
+  const body = JSON.parse(calls[0].options.body);
+  assert.equal(body.data.role, "employer");
+  assert.equal(body.data.company_name, "Acme Corp");
+});
+
 test("builds a Google OAuth redirect URL for Supabase Auth", () => {
   const url = buildGoogleOAuthUrl({
     config: {

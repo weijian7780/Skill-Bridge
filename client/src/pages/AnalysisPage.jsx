@@ -528,7 +528,7 @@ export function AnalysisPage() {
               <div>
                 <div className="flex items-center gap-2 mb-xs">
                   <Icon name="business_center" className="text-primary" />
-                  <h3 className="font-headline-md text-headline-md text-on-surface">Company Requirement Matches</h3>
+                <h3 className="font-headline-md text-headline-md text-on-surface">Requirement matches</h3>
                 </div>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">
                   These are the live job posts used to compare company requirements against your latest CV skills.
@@ -566,7 +566,7 @@ export function AnalysisPage() {
                           <div className="mt-xs flex flex-wrap gap-xs">
                             <span className="inline-flex items-center gap-xs rounded-full bg-surface-container-high border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface">
                               <Icon name="payments" className="text-[16px] text-primary" />
-                              {job.salary || "Salary not stated"}
+                                {job.salary || "Salary undisclosed"}
                             </span>
                             {job.jobType && (
                               <span className="inline-flex items-center gap-xs rounded-full bg-surface-container-high border border-outline-variant px-3 py-1 font-label-sm text-label-sm text-on-surface">
@@ -613,7 +613,7 @@ export function AnalysisPage() {
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Open job post
+                            Open listing
                           <Icon name="open_in_new" className="text-[18px]" />
                         </a>
                       )}

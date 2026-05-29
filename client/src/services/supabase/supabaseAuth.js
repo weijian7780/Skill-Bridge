@@ -76,12 +76,18 @@ export async function signUpWithPassword({
   config,
   email,
   password,
+  metadata = {},
   fetchImpl = fetch,
 }) {
+  const body = { email, password };
+  if (Object.keys(metadata).length > 0) {
+    body.data = metadata;
+  }
+
   const response = await fetchImpl(authUrl(config.url, "signup"), {
     method: "POST",
     headers: authHeaders(config),
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(body),
   });
 
   return parseAuthResponse(response);

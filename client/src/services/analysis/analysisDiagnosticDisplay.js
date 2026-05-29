@@ -28,8 +28,8 @@ export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
       value: `${analysis.readinessScore ?? 0}%`,
       isCalculated: true,
       formula: partialJobCount > 0
-        ? `Average partial match across the top ${topMatchCount} company requirement ${topMatchCount === 1 ? "match" : "matches"} because ${partialJobCount} ${partialJobCount === 1 ? "job only exposed a short requirement snippet" : "jobs only exposed short requirement snippets"}.`
-        : `Average match across the top ${topMatchCount} company requirement ${topMatchCount === 1 ? "match" : "matches"}.`,
+        ? `Average partial match across the top ${topMatchCount} requirement ${topMatchCount === 1 ? "match" : "matches"} because ${partialJobCount} ${partialJobCount === 1 ? "job only exposed a short requirement snippet" : "jobs only exposed short requirement snippets"}.`
+        : `Average match across the top ${topMatchCount} requirement ${topMatchCount === 1 ? "match" : "matches"}.`,
       ...diagnosis,
     };
   }
@@ -95,7 +95,7 @@ export function buildDiagnosticScoreDisplay({ analysis, careerTarget }) {
       { label: "Evidence needed", value: "Market job requirements have not loaded yet." },
       { label: "Comparison target", value: `${role} jobs ${region}.` },
     ],
-    priorityInterpretation: "Load market jobs before reading priority gaps or company requirement matches.",
+    priorityInterpretation: "Load market jobs before reading priority gaps or requirement matches.",
   };
 }
 

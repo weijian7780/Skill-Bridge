@@ -58,7 +58,9 @@ export function buildSequentialRoadmapPath(items = []) {
 export function buildRoadmapPageView({ careerTarget, analysis, roadmapPlan }) {
   const rawItems = Array.isArray(roadmapPlan?.items) ? roadmapPlan.items : [];
   const hasGeneratedPlan = Boolean(roadmapPlan);
-  const missingSkills = analysis?.missingSkills ?? [];
+  const missingSkills = roadmapPlan?.generatedForJob
+    ? (roadmapPlan?.jobMissingSkills ?? [])
+    : (analysis?.missingSkills ?? []);
   const planMatchesAnalysis = hasGeneratedPlan
     ? roadmapItemsMatchMissingSkills(rawItems, missingSkills)
     : false;

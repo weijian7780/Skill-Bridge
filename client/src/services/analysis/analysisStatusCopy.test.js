@@ -49,7 +49,7 @@ test("labels completed but unscorable market searches as reloadable instead of l
       analysisStatus: "needs_market",
       jobStatus: "Loaded 8 Jooble jobs for this target.",
     }),
-    "Reload Jobs",
+    "Reload",
   );
 });
 
@@ -59,16 +59,16 @@ test("uses a command label before the first market job search", () => {
       analysisStatus: "needs_market",
       jobStatus: "Career target changed. Confirm a latest CV or analyze jobs to load matching market jobs.",
     }),
-    "Load Jobs",
+    "Load",
   );
 });
 
-test("labels ready analysis market refresh as a cache-bypassing refresh action", () => {
+test("labels ready analysis refresh as a concise action", () => {
   assert.equal(
     buildMarketRefreshActionLabel({
       analysisStatus: "ready",
       jobStatus: "Loaded 10 cached Jooble jobs for this target.",
     }),
-    "Refresh Market Jobs",
+    "Refresh",
   );
 });

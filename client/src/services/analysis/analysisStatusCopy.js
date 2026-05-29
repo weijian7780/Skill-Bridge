@@ -32,14 +32,14 @@ export function buildAnalysisActionLabel({ analysisStatus, jobStatus }) {
   }
 
   if (/loaded \d+/i.test(jobStatus)) {
-    return "Reload Jobs";
+    return "Reload";
   }
 
-  return "Load Jobs";
+  return "Load";
 }
 
 export function buildMarketRefreshActionLabel({ analysisStatus }) {
-  return analysisStatus === "ready" ? "Refresh Market Jobs" : "Reload Jobs";
+  return analysisStatus === "ready" ? "Refresh" : "Reload";
 }
 
 function buildMarketUnavailableMessage(jobStatus = "") {
