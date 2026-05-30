@@ -572,6 +572,182 @@ test("uses Jooble first by default and normalizes job skills", async () => {
   }
 });
 
+test("excludes Jooble results whose role is unrelated to the searched target role", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: undefined,
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+    JOOBLE_FETCH_FULL_DESCRIPTION: "false",
+  });
+  const restoreFetch = withFetch(async () =>
+    jsonResponse({
+      totalCount: 3,
+      jobs: [
+        {
+          id: "relevant-data-analyst",
+          title: "Senior Data Analyst",
+          company: "Sabah Analytics",
+          location: "Malaysia",
+          snippet: "Build Power BI dashboards and write SQL reports for the analytics team.",
+          link: "https://example.test/job/data-analyst",
+        },
+        {
+          id: "unrelated-truck-driver",
+          title: "Heavy Truck Driver",
+          company: "Logistics Sdn Bhd",
+          location: "Malaysia",
+          snippet: "Deliver goods across the Klang Valley. Valid GDL license required.",
+          link: "https://example.test/job/truck-driver",
+        },
+        {
+          id: "unrelated-nurse",
+          title: "Registered Nurse",
+          company: "Hospital Besar",
+          location: "Malaysia",
+          snippet: "Provide patient care in the intensive care ward.",
+          link: "https://example.test/job/nurse",
+        },
+      ],
+    }),
+  );
+
+  try {
+    const result = await searchMarketJobs({
+      role: "Data Analyst",
+      location: "Malaysia",
+    });
+
+    const titles = result.jobs.map((job) => job.title);
+    assert.deepEqual(titles, ["Senior Data Analyst"]);
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
+test("keeps morphological variants of the searched role (biotech -> biotechnology)", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: undefined,
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+    JOOBLE_FETCH_FULL_DESCRIPTION: "false",
+  });
+  const restoreFetch = withFetch(async () =>
+    jsonResponse({
+      totalCount: 4,
+      jobs: [
+        {
+          id: "biotech-associate",
+          title: "Biotechnology Research Associate",
+          company: "Genome Labs",
+          location: "Malaysia",
+          snippet: "Run molecular biology assays and document experimental results.",
+          link: "https://example.test/job/biotech-associate",
+        },
+        {
+          id: "biotechnologist",
+          title: "Biotechnologist",
+          company: "BioNova",
+          location: "Malaysia",
+          snippet: "Develop bioprocesses for therapeutic protein production.",
+          link: "https://example.test/job/biotechnologist",
+        },
+        {
+          id: "lab-tech",
+          title: "Lab Technician",
+          company: "General Diagnostics",
+          location: "Malaysia",
+          snippet: "Prepare samples and maintain laboratory equipment.",
+          link: "https://example.test/job/lab-tech",
+        },
+        {
+          id: "truck-driver",
+          title: "Heavy Truck Driver",
+          company: "Logistics Sdn Bhd",
+          location: "Malaysia",
+          snippet: "Deliver goods across the Klang Valley.",
+          link: "https://example.test/job/truck-driver",
+        },
+      ],
+    }),
+  );
+
+  try {
+    const result = await searchMarketJobs({ role: "biotech", location: "Malaysia" });
+    const titles = result.jobs.map((job) => job.title);
+    assert.deepEqual(titles, ["Biotechnology Research Associate", "Biotechnologist"]);
+    assert.equal(result.noRelevantMatches, false);
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
+test("flags an empty result with a warning when no provider job matches the role", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: undefined,
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+    JOOBLE_FETCH_FULL_DESCRIPTION: "false",
+  });
+  const restoreFetch = withFetch(async () =>
+    jsonResponse({
+      totalCount: 2,
+      jobs: [
+        {
+          id: "lab-tech",
+          title: "Lab Technician",
+          company: "General Diagnostics",
+          location: "Malaysia",
+          snippet: "Prepare samples and maintain laboratory equipment.",
+          link: "https://example.test/job/lab-tech",
+        },
+        {
+          id: "nurse",
+          title: "Registered Nurse",
+          company: "Hospital Besar",
+          location: "Malaysia",
+          snippet: "Provide patient care in the intensive care ward.",
+          link: "https://example.test/job/nurse",
+        },
+      ],
+    }),
+  );
+
+  try {
+    const result = await searchMarketJobs({ role: "biotech", location: "Malaysia" });
+    assert.deepEqual(result.jobs, []);
+    assert.equal(result.noRelevantMatches, true);
+    assert.equal(result.totalBeforeRelevanceFilter, 2);
+    assert.match(result.warning, /biotech/i);
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
+test("does not flag a warning when the provider itself returns nothing", async () => {
+  const restore = withEnv({
+    GEMINI_API_KEY: undefined,
+    JOB_PROVIDER: undefined,
+    JOOBLE_API_KEY: "jooble-key",
+    JOOBLE_FETCH_FULL_DESCRIPTION: "false",
+  });
+  const restoreFetch = withFetch(async () =>
+    jsonResponse({ totalCount: 0, jobs: [] }),
+  );
+
+  try {
+    const result = await searchMarketJobs({ role: "biotech", location: "Malaysia" });
+    assert.deepEqual(result.jobs, []);
+    assert.equal(result.noRelevantMatches, false);
+    assert.equal(result.totalBeforeRelevanceFilter, 0);
+  } finally {
+    restoreFetch();
+    restore();
+  }
+});
+
 test("ignores legacy industry values when searching Jooble by role", async () => {
   const restore = withEnv({
     GEMINI_API_KEY: undefined,

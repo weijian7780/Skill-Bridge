@@ -1,5 +1,6 @@
 import { normalizeJoobleJob, stripHtml } from "./jobNormalizer.js";
 import { extractJobRequirementProfiles } from "./jobRequirementExtractor.js";
+import { summarizeRoleRelevance } from "./jobRelevance.js";
 
 const joobleEndpoint = "https://jooble.org/api";
 const FULL_DESCRIPTION_MIN_LENGTH = 280;
@@ -41,13 +42,17 @@ export async function searchJoobleJobs({ role, location }) {
 
   const data = await response.json();
   const rawJobs = Array.isArray(data.jobs) ? data.jobs : [];
-  const enrichedJobs = await enrichJoobleJobsWithFullDescriptions(rawJobs);
+  const relevance = summarizeRoleRelevance(rawJobs, role);
+  const enrichedJobs = await enrichJoobleJobsWithFullDescriptions(relevance.relevantJobs);
   const requirementProfiles = await extractJobRequirementProfiles(enrichedJobs);
 
   return {
     configured: true,
     source: "Jooble",
     total: data.totalCount || 0,
+    totalBeforeRelevanceFilter: relevance.totalBeforeRelevanceFilter,
+    noRelevantMatches: relevance.noRelevantMatches,
+    warning: relevance.warning,
     jobs: enrichedJobs.map((job, index) => normalizeJoobleJob(job, requirementProfiles[index])),
   };
 }

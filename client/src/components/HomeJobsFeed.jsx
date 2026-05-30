@@ -42,6 +42,7 @@ export function HomeJobsFeed({
   const [internalPosts, setInternalPosts] = useState([]);
   const [discoverMarketJobs, setDiscoverMarketJobs] = useState([]);
   const [feedMarketJobs, setFeedMarketJobs] = useState([]);
+  const [feedWarning, setFeedWarning] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -72,6 +73,7 @@ export function HomeJobsFeed({
 
     setIsLoading(true);
     setError("");
+    setFeedWarning("");
 
     try {
       // Load internal employer posts
@@ -96,6 +98,12 @@ export function HomeJobsFeed({
           forceRefresh: forceRef,
         });
         setFeedMarketJobs(filteredResult.configured ? filteredResult.jobs ?? [] : []);
+        if (filteredResult.configured && filteredResult.noRelevantMatches) {
+          setFeedWarning(
+            filteredResult.warning ||
+              `No market listings closely matched ${careerTarget.role}. Try a broader or different target role.`,
+          );
+        }
       }
     } catch (loadError) {
       setError(loadError.message || "Failed to load job listings");
@@ -198,11 +206,20 @@ export function HomeJobsFeed({
         <div className="rounded-xl border border-outline-variant bg-surface-container-low p-lg text-center">
           <Icon name="work_off" className="text-[40px] text-on-surface-variant" />
           <p className="mt-sm font-body-md text-body-md text-on-surface-variant">
-            {feedCopy.empty}
+            {feedWarning || feedCopy.empty}
           </p>
         </div>
       ) : (
         <div className="space-y-sm">
+          {feedWarning && (
+            <div
+              role="status"
+              className="flex items-start gap-xs rounded-xl border border-tertiary/40 bg-tertiary-container/40 p-sm font-body-sm text-body-sm text-on-surface-variant"
+            >
+              <Icon name="info" className="text-[18px] text-tertiary" />
+              <span>{feedWarning}</span>
+            </div>
+          )}
           {feedCards.map((card) => {
             const isActive = card.id === selectedJobId;
             return (

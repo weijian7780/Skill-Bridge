@@ -186,7 +186,10 @@ export function AnalysisPage() {
         setLoadedJobTargetKey(jobTargetKey);
         setJobStatus(
           result.configured
-            ? `Loaded ${loadedJobs.length} ${cacheLabel}${providerName} jobs for this target.`
+            ? result.noRelevantMatches
+              ? result.warning ||
+                `No ${providerName} jobs closely matched ${careerTarget.role}. Try a broader or different target role.`
+              : `Loaded ${loadedJobs.length} ${cacheLabel}${providerName} jobs for this target.`
             : result.message || "Job API key not configured.",
         );
       } catch (error) {
