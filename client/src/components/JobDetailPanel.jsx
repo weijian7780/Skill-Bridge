@@ -120,9 +120,6 @@ export default function JobDetailPanel({
   };
 
   const isInternal = source === "skillbridge";
-  const requiredSkills = isInternal 
-    ? (originalJob?.required_skills || [])
-    : (originalJob?.requirements?.hardSkills || originalJob?.requirements?.tools || originalJob?.extractedSkills || originalJob?.requiredSkills || []);
 
   return (
     <div className="flex h-full flex-col bg-surface-container-lowest shadow-sm rounded-r-xl border border-outline-variant overflow-hidden">
@@ -338,22 +335,6 @@ export default function JobDetailPanel({
             dangerouslySetInnerHTML={{ __html: originalJob?.description || "No job description provided." }}
           />
         </div>
-
-        {/* Required Skills list */}
-        {requiredSkills.length > 0 && (
-          <div className="detail-section">
-            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">
-              All Job Requirements ({requiredSkills.length})
-            </h3>
-            <div className="flex flex-wrap gap-xs">
-              {requiredSkills.map((skill) => (
-                <span key={skill} className="skill-chip skill-chip-neutral">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
