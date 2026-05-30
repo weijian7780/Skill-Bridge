@@ -62,25 +62,42 @@ function buildRoleKeywords(role) {
 }
 
 async function enrichJoobleJobsWithFullDescriptions(jobs) {
-  return Promise.all(jobs.map(enrichJoobleJobWithFullDescription));
+  console.log(`[DEBUG-desc] Starting full description enrichment for ${jobs.length} jobs`);
+  const enriched = await Promise.all(jobs.map(enrichJoobleJobWithFullDescription));
+
+  const successCount = enriched.filter(job => job.fullDescription).length;
+  const failCount = enriched.length - successCount;
+
+  console.log(`[DEBUG-desc] Enrichment complete: ${successCount} succeeded, ${failCount} failed/skipped`);
+
+  return enriched;
 }
 
 async function enrichJoobleJobWithFullDescription(job) {
   if (!shouldFetchFullDescription(job)) {
+    console.log(`[DEBUG-desc] Skipping fetch for "${job.title}" - reason: ${getSkipReason(job)}`);
     return job;
   }
 
+  console.log(`[DEBUG-desc] Fetching full description for "${job.title}" from ${job.link}`);
+
   try {
     const pageText = await fetchJoobleJobPageText(job.link);
+
     if (!isUsefulFullDescription(job, pageText)) {
+      const reason = getValidationFailureReason(job, pageText);
+      console.log(`[DEBUG-desc] Validation failed for "${job.title}" - reason: ${reason}`);
       return job;
     }
+
+    console.log(`[DEBUG-desc] ✓ Successfully fetched full description for "${job.title}" (${pageText.length} chars)`);
 
     return {
       ...job,
       fullDescription: pageText,
     };
-  } catch {
+  } catch (error) {
+    console.log(`[DEBUG-desc] Fetch error for "${job.title}": ${error.message}`);
     return job;
   }
 }
@@ -159,4 +176,42 @@ function isUsefulFullDescription(job, pageText) {
 
 function hasJobRequirementSignals(text) {
   return /\b(requirements?|skills?|experience|qualification|software|tools?|responsibilit(?:y|ies))\b/i.test(text);
+}
+
+function getSkipReason(job) {
+  if (String(process.env.JOOBLE_FETCH_FULL_DESCRIPTION || "true").toLowerCase() === "false") {
+    return "JOOBLE_FETCH_FULL_DESCRIPTION=false";
+  }
+
+  if (hasFullDescription(job)) {
+    const length = stripHtml(job?.fullDescription || job?.description || job?.jobDescription || "").length;
+    return `already has full description (${length} chars)`;
+  }
+
+  if (!isJoobleDetailLink(job?.link)) {
+    return `not a Jooble detail page (${job?.link})`;
+  }
+
+  return "unknown";
+}
+
+function getValidationFailureReason(job, pageText) {
+  const text = stripHtml(pageText);
+  const snippet = stripHtml(job?.snippet || "");
+  const existingDescription = stripHtml(job?.fullDescription || job?.description || job?.jobDescription || "");
+
+  if (text.length < FULL_DESCRIPTION_MIN_LENGTH) {
+    return `too short (${text.length} < ${FULL_DESCRIPTION_MIN_LENGTH} chars)`;
+  }
+
+  const existingMax = Math.max(snippet.length, existingDescription.length);
+  if (text.length <= existingMax + 80) {
+    return `not significantly longer than existing (${text.length} vs ${existingMax} + 80)`;
+  }
+
+  if (!hasJobRequirementSignals(text)) {
+    return "missing requirement keywords (requirements, skills, experience, etc.)";
+  }
+
+  return "unknown";
 }

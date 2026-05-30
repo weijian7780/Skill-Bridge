@@ -9,6 +9,7 @@ import {
   resolveEmployerCompanyName,
   resolveFeedMarketJobs,
   resolveHomeJobsFeedMode,
+  scoreInternalJobRole,
   seededShuffle,
   shouldFetchFilteredFeedMarketJobs,
 } from "./combinedJobsFeed.js";
@@ -201,4 +202,32 @@ test("attachEmployerProfilesToJobPosts maps profiles by employer_id", () => {
 
   assert.equal(posts[0].employer_profiles.company_name, "Acme Corp");
   assert.equal(resolveEmployerCompanyName(posts[0]), "Acme Corp");
+});
+
+test("scoreInternalJobRole ranks exact phrase match above generic-token-only match", () => {
+  const aiEngineer = { title: "AI Engineer", category: "", required_skills: [] };
+  const softwareEngineer = { title: "Software Engineer", category: "", required_skills: [] };
+
+  const aiScore = scoreInternalJobRole(aiEngineer, "AI Engineer");
+  const softwareScore = scoreInternalJobRole(softwareEngineer, "AI Engineer");
+
+  assert.ok(aiScore > softwareScore, `AI Engineer (${aiScore}) should score higher than Software Engineer (${softwareScore})`);
+  assert.ok(aiScore > 0, "AI Engineer should have positive score");
+});
+
+test("buildCombinedJobsFeed sorts internal matches by relevance score", () => {
+  const feed = buildCombinedJobsFeed({
+    mode: "filtered",
+    targetRole: "AI Engineer",
+    internalPosts: [
+      { id: "1", title: "Software Engineer", employer_profiles: { company_name: "Co A" } },
+      { id: "2", title: "AI Engineer", employer_profiles: { company_name: "Co B" } },
+      { id: "3", title: "Machine Learning Engineer", employer_profiles: { company_name: "Co C" } },
+    ],
+    marketJobs: [],
+  });
+
+  // AI Engineer should be first (phrase match)
+  assert.equal(feed[0].title, "AI Engineer");
+  assert.ok(feed.findIndex((job) => job.title === "AI Engineer") < feed.findIndex((job) => job.title === "Software Engineer"));
 });

@@ -5,6 +5,7 @@ import {
   filterJobsByRole,
   isRoleRelevantJob,
   roleTokens,
+  scoreRoleRelevance,
   summarizeRoleRelevance,
 } from "./jobRelevance.js";
 
@@ -113,4 +114,42 @@ test("summarizeRoleRelevance does not warn when relevant jobs exist", () => {
   );
   assert.equal(summary.noRelevantMatches, false);
   assert.equal(summary.warning, "");
+});
+
+test("scoreRoleRelevance ranks exact phrase match above generic-token-only match", () => {
+  const aiEngineer = { title: "AI Engineer" };
+  const softwareEngineer = { title: "Software Engineer" };
+
+  const aiScore = scoreRoleRelevance(aiEngineer, "AI Engineer");
+  const softwareScore = scoreRoleRelevance(softwareEngineer, "AI Engineer");
+
+  assert.ok(aiScore > softwareScore, `AI Engineer (${aiScore}) should score higher than Software Engineer (${softwareScore})`);
+  assert.ok(aiScore > 0, "AI Engineer should have positive score");
+});
+
+test("roleTokens keeps short meaningful tokens like ai, ml, qa, ux", () => {
+  assert.deepEqual(roleTokens("AI Engineer"), ["ai", "engineer"]);
+  assert.deepEqual(roleTokens("ML Engineer"), ["ml", "engineer"]);
+  assert.deepEqual(roleTokens("QA Tester"), ["qa", "tester"]);
+  assert.deepEqual(roleTokens("UX Designer"), ["ux", "designer"]);
+});
+
+test("filterJobsByRole returns jobs sorted by relevance score descending", () => {
+  const jobs = [
+    { title: "Software Engineer" },
+    { title: "AI Engineer" },
+    { title: "Machine Learning Engineer" },
+    { title: "Civil Engineer" },
+  ];
+
+  const filtered = filterJobsByRole(jobs, "AI Engineer");
+  const titles = filtered.map((job) => job.title);
+
+  // AI Engineer should be first (phrase match + all tokens)
+  assert.equal(titles[0], "AI Engineer");
+
+  // Software/Civil Engineer should rank low (only generic "engineer" token)
+  // Machine Learning Engineer should be somewhere in between (has "engineer" but also related context)
+  assert.ok(titles.indexOf("AI Engineer") < titles.indexOf("Software Engineer"));
+  assert.ok(titles.indexOf("AI Engineer") < titles.indexOf("Civil Engineer"));
 });

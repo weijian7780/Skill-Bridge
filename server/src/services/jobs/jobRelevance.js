@@ -34,35 +34,85 @@ const ROLE_STOPWORDS = new Set([
   "permanent",
 ]);
 
-const MIN_ROLE_TOKEN_LENGTH = 3;
+const MIN_ROLE_TOKEN_LENGTH = 2;
 
 // Minimum token length before prefix/stem matching is allowed. "biotech" (7)
 // may match "biotechnology"; "dev" or "data" (< 5) must match whole words only.
 const MIN_STEM_PREFIX_LENGTH = 5;
 
-// Everything a caller must know lives here: pass a job and the searched role,
-// get a boolean. A job is relevant when the searched role appears as a phrase in
-// its title, or when any significant role token appears in the title. When the
-// role has no significant tokens (e.g. the broad "graduate" discover role), every
-// job is considered relevant so discovery stays wide.
-export function isRoleRelevantJob(job, role) {
+// Generic role words that appear in many job titles. These score low (1 point)
+// compared to specific/rare tokens (10 points) so "AI Engineer" ranks "AI Engineer"
+// far above "Software Engineer" (which only matches the generic "engineer" token).
+const GENERIC_ROLE_TOKENS = new Set([
+  "engineer",
+  "developer",
+  "analyst",
+  "manager",
+  "specialist",
+  "officer",
+  "executive",
+  "assistant",
+  "associate",
+  "coordinator",
+  "lead",
+  "head",
+  "director",
+  "consultant",
+]);
+
+const SCORE_PHRASE_MATCH = 100;
+const SCORE_SPECIFIC_TOKEN = 10;
+const SCORE_GENERIC_TOKEN = 1;
+const SCORE_ALL_TOKENS_BONUS = 20;
+
+// Score how well a job matches the searched role. Higher score = better match.
+// Returns 0 if irrelevant. Phrase match (e.g. "ai engineer" in title) scores highest.
+// Specific tokens (ai, ml, data) score higher than generic ones (engineer, developer).
+// Jobs with all role tokens present get a bonus.
+export function scoreRoleRelevance(job, role) {
   const tokens = roleTokens(role);
   if (tokens.length === 0) {
-    return true;
+    return 1; // Discover mode - all jobs equally relevant
   }
 
   const title = normalizeMatchText(job?.title || "");
   if (!title.trim()) {
-    return false;
+    return 0;
   }
 
+  let score = 0;
+
+  // Phrase match is strongest signal
   const rolePhrase = normalizeMatchText(role);
   if (rolePhrase.trim() && title.includes(rolePhrase)) {
-    return true;
+    score += SCORE_PHRASE_MATCH;
   }
 
+  // Token matching with weight based on specificity
   const titleWords = title.trim().split(" ").filter(Boolean);
-  return tokens.some((token) => titleWords.some((word) => wordMatchesToken(word, token)));
+  const matchedTokens = new Set();
+
+  for (const token of tokens) {
+    const matched = titleWords.some((word) => wordMatchesToken(word, token));
+    if (matched) {
+      matchedTokens.add(token);
+      const weight = GENERIC_ROLE_TOKENS.has(token) ? SCORE_GENERIC_TOKEN : SCORE_SPECIFIC_TOKEN;
+      score += weight;
+    }
+  }
+
+  // Bonus if all tokens present (full coverage)
+  if (matchedTokens.size === tokens.length && tokens.length > 0) {
+    score += SCORE_ALL_TOKENS_BONUS;
+  }
+
+  return score;
+}
+
+// Everything a caller must know lives here: pass a job and the searched role,
+// get a boolean. A job is relevant when it has a positive relevance score.
+export function isRoleRelevantJob(job, role) {
+  return scoreRoleRelevance(job, role) > 0;
 }
 
 // A title word matches a role token when they are the same word, or when one is a
@@ -89,7 +139,10 @@ export function filterJobsByRole(jobs = [], role) {
     return Array.isArray(jobs) ? jobs : [];
   }
 
-  return (Array.isArray(jobs) ? jobs : []).filter((job) => isRoleRelevantJob(job, role));
+  const relevantJobs = (Array.isArray(jobs) ? jobs : []).filter((job) => isRoleRelevantJob(job, role));
+
+  // Sort by relevance score descending (best matches first)
+  return relevantJobs.sort((a, b) => scoreRoleRelevance(b, role) - scoreRoleRelevance(a, role));
 }
 
 // Single source of truth for what relevance filtering did, so every consumer can

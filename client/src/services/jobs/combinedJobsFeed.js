@@ -44,30 +44,77 @@ export function resolveFeedMarketJobs({
   return feedMarketJobs;
 }
 
-export function matchesInternalJobRole(job, targetRole) {
+// Generic role words that appear in many job titles. These score low compared to
+// specific/rare tokens so "AI Engineer" ranks "AI Engineer" far above "Software Engineer".
+const GENERIC_ROLE_TOKENS = new Set([
+  "engineer",
+  "developer",
+  "analyst",
+  "manager",
+  "specialist",
+  "officer",
+  "executive",
+  "assistant",
+  "associate",
+  "coordinator",
+  "lead",
+  "head",
+  "director",
+  "consultant",
+]);
+
+const SCORE_PHRASE_MATCH = 100;
+const SCORE_SPECIFIC_TOKEN = 10;
+const SCORE_GENERIC_TOKEN = 1;
+const SCORE_ALL_TOKENS_BONUS = 20;
+
+// Score how well an internal job matches the target role. Higher score = better match.
+// Returns 0 if irrelevant. Phrase match scores highest. Specific tokens score higher
+// than generic ones. Jobs with all role tokens present get a bonus.
+export function scoreInternalJobRole(job, targetRole) {
   const role = String(targetRole ?? "").trim().toLowerCase();
   if (!role) {
-    return false;
+    return 0;
   }
 
   const title = String(job.title ?? "").toLowerCase();
-  if (title.includes(role)) {
-    return true;
-  }
-
   const category = String(job.category ?? "").toLowerCase();
-  if (category.includes(role)) {
-    return true;
-  }
-
-  const tokens = role.split(/\s+/).filter((token) => token.length >= 3);
   const skills = (job.required_skills ?? []).map((skill) => String(skill).toLowerCase());
 
-  return tokens.some(
-    (token) =>
+  let score = 0;
+
+  // Phrase match is strongest signal
+  if (title.includes(role) || category.includes(role)) {
+    score += SCORE_PHRASE_MATCH;
+  }
+
+  // Token matching with weight based on specificity
+  const tokens = role.split(/\s+/).filter((token) => token.length >= 2);
+  const matchedTokens = new Set();
+
+  for (const token of tokens) {
+    const matched =
       title.includes(token) ||
-      skills.some((skill) => skill.includes(token)),
-  );
+      category.includes(token) ||
+      skills.some((skill) => skill.includes(token));
+
+    if (matched) {
+      matchedTokens.add(token);
+      const weight = GENERIC_ROLE_TOKENS.has(token) ? SCORE_GENERIC_TOKEN : SCORE_SPECIFIC_TOKEN;
+      score += weight;
+    }
+  }
+
+  // Bonus if all tokens present (full coverage)
+  if (matchedTokens.size === tokens.length && tokens.length > 0) {
+    score += SCORE_ALL_TOKENS_BONUS;
+  }
+
+  return score;
+}
+
+export function matchesInternalJobRole(job, targetRole) {
+  return scoreInternalJobRole(job, targetRole) > 0;
 }
 
 export function hashSeed(seed) {
@@ -177,7 +224,13 @@ export function buildCombinedJobsFeed({
   const internalMatches = internalPosts.filter((job) =>
     matchesInternalJobRole(job, targetRole),
   );
-  const internalCards = internalMatches.map(normalizeInternalJobForFeed);
+
+  // Sort internal matches by relevance score descending (best matches first)
+  const sortedInternalMatches = internalMatches.sort(
+    (a, b) => scoreInternalJobRole(b, targetRole) - scoreInternalJobRole(a, targetRole),
+  );
+
+  const internalCards = sortedInternalMatches.map(normalizeInternalJobForFeed);
   const marketCards = marketJobs.map((job) =>
     normalizeMarketJobForFeed(job, marketProviderName),
   );
