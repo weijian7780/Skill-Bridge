@@ -27,12 +27,9 @@ export function EmployerSidebar() {
       style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)" }}>
 
       {/* Brand */}
-      <div className="px-md py-lg flex items-center space-x-sm border-b border-white/10">
-        <Icon name="conversion_path" className="text-blue-400 text-[28px]" />
-        <div>
-          <h1 className="text-white font-semibold text-[16px] leading-tight">SkillBridge</h1>
-          <p className="text-slate-400 text-[11px] leading-tight mt-0.5">Employer Portal</p>
-        </div>
+      <div className="px-md py-lg flex flex-col items-center gap-2 border-b border-white/10">
+        <img src="/skillbridge-logo-white.png" alt="SkillBridge" className="h-14 w-auto max-w-full object-contain" />
+        <p className="text-slate-400 text-[12px] leading-tight tracking-wide">Employer Portal</p>
       </div>
 
       {/* Company */}

@@ -1,17 +1,32 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage.jsx";
-import { SignupPage } from "./pages/SignupPage.jsx";
-import { RoleChooserPage } from "./pages/RoleChooserPage.jsx";
-import { SignupEmployerPage } from "./pages/SignupEmployerPage.jsx";
-import { HomePage } from "./pages/HomePage.jsx";
-import { RoadmapPage } from "./pages/RoadmapPage.jsx";
-import { ProfilePage } from "./pages/ProfilePage.jsx";
-import { JobApplyPage } from "./pages/JobApplyPage.jsx";
-import { StudentApplicationsPage } from "./pages/StudentApplicationsPage.jsx";
-import { StudentSetupPage } from "./pages/StudentSetupPage.jsx";
-import { SettingsPage } from "./pages/SettingsPage.jsx";
-import { EmployerApp } from "./pages/EmployerApp.jsx";
 import { useAuth } from "./state/AuthContext.jsx";
+
+// Route components are code-split so the initial bundle stays small. Each page
+// is loaded on demand the first time its route is visited. LoginPage stays
+// eager because it is the first paint for unauthenticated visitors.
+const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })));
+
+const SignupPage = lazyPage(() => import("./pages/SignupPage.jsx"), "SignupPage");
+const RoleChooserPage = lazyPage(() => import("./pages/RoleChooserPage.jsx"), "RoleChooserPage");
+const SignupEmployerPage = lazyPage(() => import("./pages/SignupEmployerPage.jsx"), "SignupEmployerPage");
+const HomePage = lazyPage(() => import("./pages/HomePage.jsx"), "HomePage");
+const RoadmapPage = lazyPage(() => import("./pages/RoadmapPage.jsx"), "RoadmapPage");
+const ProfilePage = lazyPage(() => import("./pages/ProfilePage.jsx"), "ProfilePage");
+const JobApplyPage = lazyPage(() => import("./pages/JobApplyPage.jsx"), "JobApplyPage");
+const StudentApplicationsPage = lazyPage(() => import("./pages/StudentApplicationsPage.jsx"), "StudentApplicationsPage");
+const StudentSetupPage = lazyPage(() => import("./pages/StudentSetupPage.jsx"), "StudentSetupPage");
+const SettingsPage = lazyPage(() => import("./pages/SettingsPage.jsx"), "SettingsPage");
+const EmployerApp = lazyPage(() => import("./pages/EmployerApp.jsx"), "EmployerApp");
+
+function PageLoading() {
+  return (
+    <div className="min-h-screen bg-surface text-on-surface grid place-items-center">
+      <p className="font-label-md text-label-md text-on-surface-variant">Loading...</p>
+    </div>
+  );
+}
 
 function resolveUserRole(session) {
   return session?.user?.user_metadata?.role ?? "student";
@@ -88,6 +103,7 @@ function AuthRedirect() {
 
 export default function App() {
   return (
+    <Suspense fallback={<PageLoading />}>
     <Routes>
       <Route path="/" element={<AuthRedirect />} />
       <Route path="/signup" element={<RoleChooserPage />} />
@@ -112,5 +128,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }

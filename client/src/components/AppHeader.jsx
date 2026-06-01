@@ -6,10 +6,7 @@ export function AppHeader({ simple = false }) {
   return (
     <header className="fixed top-0 w-full bg-surface-container/95 backdrop-blur flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 z-50 border-b border-outline-variant shadow-sm">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold text-label-md shadow-sm">
-          AM
-        </div>
-        <span className="font-headline-md text-headline-md font-bold text-on-surface">SkillBridge</span>
+        <img src="/skillbridge-logo.png" alt="SkillBridge" className="h-14 w-auto" />
       </div>
 
       {!simple && (
