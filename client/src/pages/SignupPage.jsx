@@ -79,10 +79,6 @@ export function SignupPage() {
                   <span className="w-5 h-5 rounded-full bg-white text-[#4285F4] grid place-items-center font-bold text-xs">G</span>
                   <span className="font-label-md text-label-md text-on-surface">Continue with Google</span>
                 </button>
-                <button className="flex items-center justify-center space-x-sm w-full py-sm bg-surface-container-high hover:bg-surface-variant border border-outline-variant rounded-lg transition-all active:scale-[0.98]">
-                  <Icon name="mail" className="text-on-surface text-[20px]" />
-                  <span className="font-label-md text-label-md text-on-surface">Continue with Email</span>
-                </button>
               </div>
               <div className="flex items-center space-x-sm">
                 <hr className="flex-grow border-outline-variant" />

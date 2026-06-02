@@ -9,6 +9,8 @@ import { useAuth } from "./state/AuthContext.jsx";
 const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })));
 
 const SignupPage = lazyPage(() => import("./pages/SignupPage.jsx"), "SignupPage");
+const ForgotPasswordPage = lazyPage(() => import("./pages/ForgotPasswordPage.jsx"), "ForgotPasswordPage");
+const ResetPasswordPage = lazyPage(() => import("./pages/ResetPasswordPage.jsx"), "ResetPasswordPage");
 const RoleChooserPage = lazyPage(() => import("./pages/RoleChooserPage.jsx"), "RoleChooserPage");
 const SignupEmployerPage = lazyPage(() => import("./pages/SignupEmployerPage.jsx"), "SignupEmployerPage");
 const HomePage = lazyPage(() => import("./pages/HomePage.jsx"), "HomePage");
@@ -109,6 +111,8 @@ export default function App() {
       <Route path="/signup" element={<RoleChooserPage />} />
       <Route path="/signup/student" element={<SignupPage />} />
       <Route path="/signup/employer" element={<SignupEmployerPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Student routes */}
       <Route path="/student/setup" element={<RequireAuth><RequireRole role="student"><RequireSetup invert><StudentSetupPage /></RequireSetup></RequireRole></RequireAuth>} />

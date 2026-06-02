@@ -174,6 +174,50 @@ export async function updateUserMetadata({ config, accessToken, data, fetchImpl 
   };
 }
 
+export async function requestPasswordReset({ config, email, redirectTo, fetchImpl = fetch }) {
+  const response = await fetchImpl(authUrl(config.url, "recover", { redirect_to: redirectTo }), {
+    method: "POST",
+    headers: authHeaders(config),
+    body: JSON.stringify({ email }),
+  });
+
+  // Supabase returns 200 with an empty body on success and intentionally does
+  // not reveal whether the email exists, so we only surface ok/reason.
+  if (!response.ok && response.status !== 204) {
+    const body = await response.json().catch(() => null);
+    return {
+      ok: false,
+      reason: body?.msg ?? body?.message ?? "Could not send the password reset email.",
+    };
+  }
+
+  return { ok: true, reason: "" };
+}
+
+export async function updatePassword({ config, accessToken, password, fetchImpl = fetch }) {
+  const response = await fetchImpl(authUrl(config.url, "user"), {
+    method: "PUT",
+    headers: authHeaders(config, accessToken),
+    body: JSON.stringify({ password }),
+  });
+
+  const body = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      reason: body?.msg ?? body?.message ?? "Could not update the password.",
+      user: null,
+    };
+  }
+
+  return {
+    ok: true,
+    reason: "",
+    user: body,
+  };
+}
+
 export function buildGoogleOAuthUrl({ config, redirectTo }) {
   return authUrl(config.url, "authorize", {
     provider: "google",

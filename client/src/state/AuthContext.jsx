@@ -7,9 +7,11 @@ import {
   getCurrentUser,
   parseAuthSession,
   refreshAuthSession,
+  requestPasswordReset,
   signInWithPassword,
   signOut,
   signUpWithPassword,
+  updatePassword,
   updateUserMetadata,
 } from "../services/supabase/supabaseAuth.js";
 
@@ -190,6 +192,31 @@ export function AuthProvider({ children }) {
     }));
   }, [config]);
 
+  const sendPasswordReset = useCallback(async (email) => {
+    if (!config.configured) {
+      return { ok: false, reason: config.reason };
+    }
+
+    const redirectTo = typeof window === "undefined" ? "" : `${window.location.origin}/reset-password`;
+    const result = await requestPasswordReset({ config, email, redirectTo });
+    if (result.ok) {
+      setAuthStatus("Password reset email sent. Check your inbox.");
+    }
+    return result;
+  }, [config]);
+
+  const resetPassword = useCallback(async (password) => {
+    if (!config.configured || !session?.accessToken) {
+      return { ok: false, reason: "This password reset link is invalid or has expired." };
+    }
+
+    const result = await updatePassword({ config, accessToken: session.accessToken, password });
+    if (result.ok) {
+      setAuthStatus("Password updated. You are now signed in.");
+    }
+    return result;
+  }, [config, session?.accessToken]);
+
   const expireSession = useCallback((reason = "Session expired") => {
     clearStoredSession(storage);
     setSession(null);
@@ -216,6 +243,8 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     logout,
     register,
+    resetPassword,
+    sendPasswordReset,
     session,
     supabaseConnection,
     updateMetadata,

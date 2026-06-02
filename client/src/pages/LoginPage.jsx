@@ -83,10 +83,6 @@ export function LoginPage() {
                   <span className="w-5 h-5 rounded-full bg-white text-[#4285F4] grid place-items-center font-bold text-xs">G</span>
                   <span className="font-label-md text-label-md text-on-surface">Continue with Google</span>
                 </button>
-                <button className="flex items-center justify-center space-x-sm w-full py-sm bg-surface-container-high hover:bg-surface-variant border border-outline-variant rounded-lg transition-all active:scale-[0.98]">
-                  <Icon name="mail" className="text-on-surface text-[20px]" />
-                  <span className="font-label-md text-label-md text-on-surface">Continue with Email</span>
-                </button>
               </div>
               <div className="flex items-center space-x-sm">
                 <hr className="flex-grow border-outline-variant" />
@@ -107,7 +103,7 @@ export function LoginPage() {
                     <input className="w-4 h-4 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-surface" type="checkbox" />
                     <span className="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface">Remember me</span>
                   </label>
-                  <a className="font-label-sm text-label-sm text-primary hover:underline" href="#">Forgot password?</a>
+                  <Link to="/forgot-password" className="font-label-sm text-label-sm text-primary hover:underline">Forgot password?</Link>
                 </div>
                 {(formStatus || authStatus) && (
                   <div className={`rounded-lg border px-sm py-sm font-body-sm text-body-sm ${(isError || !config.configured) ? "border-error/40 text-error" : "border-outline-variant text-on-surface-variant"}`}>

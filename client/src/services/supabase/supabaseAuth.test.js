@@ -5,9 +5,65 @@ import {
   buildGoogleOAuthUrl,
   getCurrentUser,
   parseAuthSession,
+  requestPasswordReset,
   signInWithPassword,
   signUpWithPassword,
+  updatePassword,
 } from "./supabaseAuth.js";
+
+test("updates the password using a recovery access token", async () => {
+  const calls = [];
+  const result = await updatePassword({
+    config: {
+      url: "https://skillbridge.supabase.co",
+      publishableKey: "publishable-key",
+    },
+    accessToken: "recovery-access-token",
+    password: "new-secret-password",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { id: "user-123", email: "student@ums.edu.my" };
+        },
+      };
+    },
+  });
+
+  assert.equal(calls[0].url, "https://skillbridge.supabase.co/auth/v1/user");
+  assert.equal(calls[0].options.method, "PUT");
+  assert.equal(calls[0].options.headers.Authorization, "Bearer recovery-access-token");
+  assert.equal(calls[0].options.body, JSON.stringify({ password: "new-secret-password" }));
+  assert.equal(result.ok, true);
+  assert.equal(result.user.id, "user-123");
+});
+
+test("requests a password reset email through Supabase Auth REST", async () => {
+  const calls = [];
+  const result = await requestPasswordReset({
+    config: {
+      url: "https://skillbridge.supabase.co",
+      publishableKey: "publishable-key",
+    },
+    email: "student@ums.edu.my",
+    redirectTo: "https://skillbridge.vercel.app/reset-password",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return { ok: true, status: 200, async json() { return {}; } };
+    },
+  });
+
+  assert.equal(
+    calls[0].url,
+    "https://skillbridge.supabase.co/auth/v1/recover?redirect_to=https%3A%2F%2Fskillbridge.vercel.app%2Freset-password",
+  );
+  assert.equal(calls[0].options.method, "POST");
+  assert.equal(calls[0].options.headers.apikey, "publishable-key");
+  assert.equal(calls[0].options.body, JSON.stringify({ email: "student@ums.edu.my" }));
+  assert.equal(result.ok, true);
+});
 
 test("signs in with email and password through Supabase Auth REST", async () => {
   const calls = [];
