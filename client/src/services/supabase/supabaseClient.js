@@ -110,6 +110,58 @@ export function createSupabaseRestClient({
 
       return parseResponse(response);
     },
+
+    async insert(table, record) {
+      const response = await fetchImpl(tableUrl(url, table), {
+        method: "POST",
+        headers: buildHeaders({ publishableKey, accessToken, prefer: "return=representation" }),
+        body: JSON.stringify(record),
+      });
+
+      return parseResponse(response);
+    },
+
+    async list(table, { eq = {}, order } = {}) {
+      const filters = Object.fromEntries(
+        Object.entries(eq).map(([key, value]) => [key, `eq.${value}`]),
+      );
+
+      const response = await fetchImpl(tableUrl(url, table, { ...filters, order }), {
+        method: "GET",
+        headers: buildHeaders({ publishableKey, accessToken }),
+      });
+
+      return parseListResponse(response);
+    },
+
+    async remove(table, { eq = {} } = {}) {
+      const filters = Object.fromEntries(
+        Object.entries(eq).map(([key, value]) => [key, `eq.${value}`]),
+      );
+
+      const response = await fetchImpl(tableUrl(url, table, filters), {
+        method: "DELETE",
+        headers: buildHeaders({ publishableKey, accessToken }),
+      });
+
+      return parseResponse(response);
+    },
+  };
+}
+
+async function parseListResponse(response) {
+  const body = await readResponseBody(response);
+
+  if (!response.ok) {
+    return {
+      data: null,
+      error: responseError(body, response.status),
+    };
+  }
+
+  return {
+    data: Array.isArray(body) ? body : body == null ? [] : [body],
+    error: null,
   };
 }
 

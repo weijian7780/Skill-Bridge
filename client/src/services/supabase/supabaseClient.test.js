@@ -80,6 +80,74 @@ test("uses an access token for authenticated Supabase REST requests", async () =
   assert.equal(calls[0].url, "https://skillbridge.supabase.co/rest/v1/student_profile_snapshots?user_id=eq.user-123");
 });
 
+test("inserts a new row and returns the created record", async () => {
+  const calls = [];
+  const result = createSupabaseConnection({
+    env: {
+      VITE_SUPABASE_URL: "https://skillbridge.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+    },
+    accessToken: "user-jwt",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return { ok: true, status: 201, async json() { return [{ id: "rm-1" }]; } };
+    },
+  });
+
+  const response = await result.client.insert("saved_roadmaps", { user_id: "user-123" });
+
+  assert.equal(calls[0].url, "https://skillbridge.supabase.co/rest/v1/saved_roadmaps");
+  assert.equal(calls[0].options.method, "POST");
+  assert.equal(calls[0].options.headers.Prefer, "return=representation");
+  assert.equal(calls[0].options.body, JSON.stringify({ user_id: "user-123" }));
+  assert.deepEqual(response, { data: { id: "rm-1" }, error: null });
+});
+
+test("lists all matching rows in the requested order", async () => {
+  const calls = [];
+  const result = createSupabaseConnection({
+    env: {
+      VITE_SUPABASE_URL: "https://skillbridge.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+    },
+    accessToken: "user-jwt",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return { ok: true, status: 200, async json() { return [{ id: "a" }, { id: "b" }]; } };
+    },
+  });
+
+  const response = await result.client.list("saved_roadmaps", {
+    eq: { user_id: "user-123" },
+    order: "created_at.desc",
+  });
+
+  assert.equal(calls[0].url, "https://skillbridge.supabase.co/rest/v1/saved_roadmaps?user_id=eq.user-123&order=created_at.desc");
+  assert.equal(calls[0].options.method, "GET");
+  assert.deepEqual(response, { data: [{ id: "a" }, { id: "b" }], error: null });
+});
+
+test("removes rows matching a filter", async () => {
+  const calls = [];
+  const result = createSupabaseConnection({
+    env: {
+      VITE_SUPABASE_URL: "https://skillbridge.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+    },
+    accessToken: "user-jwt",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return { ok: true, status: 204, async json() { return null; } };
+    },
+  });
+
+  const response = await result.client.remove("saved_roadmaps", { eq: { id: "rm-1" } });
+
+  assert.equal(calls[0].url, "https://skillbridge.supabase.co/rest/v1/saved_roadmaps?id=eq.rm-1");
+  assert.equal(calls[0].options.method, "DELETE");
+  assert.equal(response.error, null);
+});
+
 test("marks rejected Supabase REST requests as auth errors", async () => {
   const result = createSupabaseConnection({
     env: {

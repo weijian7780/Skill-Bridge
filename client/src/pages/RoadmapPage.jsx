@@ -1,16 +1,33 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
-import { buildRoadmapPageView } from "../services/roadmap/roadmapDisplay.js";
+import { buildRoadmapPageView, buildSavedRoadmapView } from "../services/roadmap/roadmapDisplay.js";
 import { useAppState } from "../state/AppStateContext.jsx";
+import { useSavedRoadmaps } from "../state/useSavedRoadmaps.js";
+
+function formatSavedDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+}
 
 export function RoadmapPage() {
   const { analysis, careerTarget, roadmapPlan } = useAppState();
-  const view = buildRoadmapPageView({
-    careerTarget,
-    analysis,
-    roadmapPlan,
-  });
+  const { savedRoadmaps, savedRoadmapStatus, saveCurrentRoadmap, removeSavedRoadmap } = useSavedRoadmaps();
+  const [selectedSavedId, setSelectedSavedId] = useState(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+
+  const selectedSaved = savedRoadmaps.find((roadmap) => roadmap.id === selectedSavedId) || null;
+  const currentView = buildRoadmapPageView({ careerTarget, analysis, roadmapPlan });
+  const view = selectedSaved ? buildSavedRoadmapView(selectedSaved) : currentView;
+  const canSaveCurrent = !selectedSaved && currentView.isGenerated && !currentView.hasNoGaps;
+
+  async function handleSaveCurrent() {
+    setSaveBusy(true);
+    await saveCurrentRoadmap({ careerTarget, analysis, roadmapPlan });
+    setSaveBusy(false);
+  }
 
   return (
     <PageShell>
@@ -26,12 +43,67 @@ export function RoadmapPage() {
                 {view.heroSubtitle}
               </p>
             </div>
-            <div className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-sm py-xs text-primary font-label-md text-label-md">
-              <Icon name={view.isGenerated ? "route" : "pending"} className="text-[18px]" />
-              {view.sourceLabel}
+            <div className="flex items-center gap-sm">
+              <div className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-sm py-xs text-primary font-label-md text-label-md">
+                <Icon name={view.isGenerated ? "route" : "pending"} className="text-[18px]" />
+                {view.sourceLabel}
+              </div>
+              {canSaveCurrent && (
+                <button
+                  onClick={handleSaveCurrent}
+                  disabled={saveBusy}
+                  className="inline-flex items-center gap-xs rounded-lg bg-primary px-sm py-xs font-label-md text-label-md text-on-primary active:scale-[0.98] disabled:opacity-60"
+                >
+                  <Icon name="bookmark_add" className="text-[18px]" />
+                  {saveBusy ? "Saving..." : "Save roadmap"}
+                </button>
+              )}
             </div>
           </div>
         </section>
+
+        {(savedRoadmaps.length > 0 || savedRoadmapStatus) && (
+          <section className="mb-10 bg-surface-container border border-outline-variant rounded-xl p-md">
+            <div className="flex items-center gap-sm mb-sm">
+              <Icon name="history" className="text-primary" />
+              <h3 className="font-headline-md text-headline-md text-on-surface">Saved roadmaps</h3>
+            </div>
+            {savedRoadmapStatus && (
+              <p className="font-body-sm text-body-sm text-on-surface-variant mb-sm">{savedRoadmapStatus}</p>
+            )}
+            {selectedSaved && (
+              <button
+                onClick={() => setSelectedSavedId(null)}
+                className="inline-flex items-center gap-xs mb-sm font-label-sm text-label-sm text-primary hover:underline"
+              >
+                <Icon name="arrow_back" className="text-[16px]" />
+                Back to current roadmap
+              </button>
+            )}
+            <div className="flex flex-col gap-xs">
+              {savedRoadmaps.map((roadmap) => (
+                <div
+                  key={roadmap.id}
+                  className={`flex items-center justify-between gap-sm rounded-lg border px-sm py-xs ${roadmap.id === selectedSavedId ? "border-primary bg-primary/5" : "border-outline-variant"}`}
+                >
+                  <button onClick={() => setSelectedSavedId(roadmap.id)} className="flex-1 text-left">
+                    <p className="font-label-md text-label-md text-on-surface">{roadmap.title}</p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                      {(roadmap.roadmap_items?.length ?? 0)} skills · {formatSavedDate(roadmap.created_at)}
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => removeSavedRoadmap(roadmap.id)}
+                    className="p-xs rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors"
+                    aria-label="Delete saved roadmap"
+                  >
+                    <Icon name="delete" className="text-[18px]" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {!view.isGenerated ? (
           <section className="bg-surface-container border border-outline-variant rounded-xl p-lg">

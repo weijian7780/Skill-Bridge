@@ -5,8 +5,27 @@ import {
   buildCompactRoadmapCards,
   buildRoadmapPageView,
   buildRoadmapGenerationPayload,
+  buildSavedRoadmapView,
   buildSequentialRoadmapPath,
 } from "./roadmapDisplay.js";
+
+test("renders a saved roadmap snapshot without the freshness guard", () => {
+  const view = buildSavedRoadmapView({
+    target_role: "Data Analyst",
+    target_region: "selangor",
+    readiness_score: 40,
+    missing_skills: ["SQL", "Power BI"],
+    companies: ["Acme", "Globex"],
+    roadmap_items: [{ skill: "SQL", title: "Learn SQL" }],
+    generation_basis: { basis: "company requirements", assumptions: ["entry level"] },
+  });
+
+  assert.equal(view.isGenerated, true);
+  assert.match(view.heroTitle, /Data Analyst/);
+  assert.equal(view.pathItems.length, 1);
+  assert.equal(view.sourceLabel, "Saved roadmap");
+  assert.deepEqual(view.assumptions, ["entry level"]);
+});
 
 test("builds compact visual roadmap cards from verbose generated items", () => {
   const [card] = buildCompactRoadmapCards([

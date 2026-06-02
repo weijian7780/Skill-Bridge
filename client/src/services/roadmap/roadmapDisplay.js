@@ -149,6 +149,48 @@ export function buildRoadmapPageView({ careerTarget, analysis, roadmapPlan }) {
   };
 }
 
+// A saved roadmap is a frozen historical snapshot, so it must NOT pass through
+// the freshness guard in buildRoadmapPageView (which hides plans that no longer
+// match the current analysis). This renders the stored items directly.
+export function buildSavedRoadmapView(saved) {
+  const items = Array.isArray(saved?.roadmap_items) ? saved.roadmap_items : [];
+  const role = saved?.target_role || "Career";
+  const region = saved?.target_region || "selected market";
+  const readinessScore = saved?.readiness_score ?? 0;
+  const missingSkills = saved?.missing_skills ?? [];
+  const companies = saved?.companies ?? [];
+  const basis = saved?.generation_basis ?? {};
+
+  return {
+    isGenerated: items.length > 0,
+    hasNoGaps: items.length === 0,
+    heroTitle: `${role} Roadmap`,
+    heroSubtitle: `${items.length} market gap ${items.length === 1 ? "skill" : "skills"} planned for ${region}`,
+    emptyStateMessage: "This saved roadmap has no planned skills.",
+    sourceLabel: "Saved roadmap",
+    summaryCards: [
+      {
+        label: "Skills planned",
+        value: String(items.length),
+        detail: missingSkills.slice(0, 3).join(", ") || "Saved from analysis gaps",
+      },
+      {
+        label: "Match at save time",
+        value: `${readinessScore}%`,
+        detail: "Readiness when this roadmap was saved",
+      },
+      {
+        label: "Companies",
+        value: String(companies.length),
+        detail: companies.slice(0, 3).join(", ") || "From market evidence",
+      },
+    ],
+    pathItems: buildSequentialRoadmapPath(items),
+    basisOverview: basis.basis || `Saved roadmap for ${role}.`,
+    assumptions: toList(basis.assumptions),
+  };
+}
+
 export function buildRoadmapGenerationPayload({ careerTarget, skillProfile, analysis }) {
   return {
     careerTarget,
