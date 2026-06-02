@@ -1,8 +1,10 @@
 import { Router } from "express";
+import { requireActiveSubscription } from "../../middleware/subscription.js";
 
 export const jobPostsRouter = Router();
 
-jobPostsRouter.post("/", async (request, response) => {
+// Posting a job is a premium feature: requires an active employer subscription.
+jobPostsRouter.post("/", requireActiveSubscription, async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;
   const employerId = request.user.id;
 

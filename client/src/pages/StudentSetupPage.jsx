@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../state/AuthContext.jsx";
 import { useAppState } from "../state/AppStateContext.jsx";
+import { regionOptions } from "../services/career/regionOptions.js";
 import { Icon } from "../components/Icon.jsx";
 
 export function StudentSetupPage() {
@@ -15,6 +16,8 @@ export function StudentSetupPage() {
   const [university, setUniversity] = useState(academicProfile.university);
   const [program, setProgram] = useState(academicProfile.program);
   const [studyYear, setStudyYear] = useState(academicProfile.studyYear);
+  const [location, setLocation] = useState(academicProfile.location || "all-malaysia");
+  const [discoverable, setDiscoverable] = useState(academicProfile.discoverable ?? false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,6 +43,8 @@ export function StudentSetupPage() {
       university,
       program,
       studyYear,
+      location,
+      discoverable,
     });
 
     // 3. Redirect to Home
@@ -138,6 +143,36 @@ export function StudentSetupPage() {
               <option value="Graduated">Graduated</option>
             </select>
           </div>
+
+          <div className="space-y-xs">
+            <label className="font-label-md text-label-md text-on-surface" htmlFor="location">
+              Preferred work location <span className="text-error">*</span>
+            </label>
+            <select
+              id="location"
+              required
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-sm text-on-surface focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
+            >
+              {regionOptions.map((region) => (
+                <option key={region.id} value={region.id}>{region.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <label className="flex items-start gap-sm p-sm rounded-lg bg-surface-container-lowest border border-outline-variant cursor-pointer">
+            <input
+              type="checkbox"
+              checked={discoverable}
+              onChange={(e) => setDiscoverable(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
+            />
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              <span className="font-label-md text-label-md text-on-surface block">Let employers find me</span>
+              Allow subscribed employers to discover your skill profile and location when searching for candidates. You can change this anytime.
+            </span>
+          </label>
 
           <div className="pt-md">
             <button

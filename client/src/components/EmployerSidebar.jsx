@@ -8,7 +8,9 @@ const navItems = [
   { to: "/employer/dashboard", icon: "dashboard", label: "Dashboard" },
   { to: "/employer/jobs", icon: "work", label: "Jobs" },
   { to: "/employer/applicants", icon: "group", label: "Applicants" },
+  { to: "/employer/candidates", icon: "person_search", label: "Find Candidates" },
   { to: "/employer/profile", icon: "apartment", label: "Company Profile" },
+  { to: "/employer/subscription", icon: "workspace_premium", label: "Subscription" },
 ];
 
 export function EmployerSidebar() {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Icon } from "../../components/Icon.jsx";
 import { useAuth } from "../../state/AuthContext.jsx";
-import { getEmployerApplication, updateApplicationStatus, updateApplicationNotes } from "../../services/employer/employerApplicationsApi.js";
+import { getEmployerApplication, updateApplicationStatus, updateApplicationNotes, getApplicationResumeUrl } from "../../services/employer/employerApplicationsApi.js";
 import { createEmployerInterview, getEmployerInterviews } from "../../services/employer/employerInterviewsApi.js";
 
 export function ApplicantDetailsPage() {
@@ -16,6 +16,7 @@ export function ApplicantDetailsPage() {
   const [error, setError] = useState("");
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [notesStatus, setNotesStatus] = useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Interview Scheduler State
@@ -69,14 +70,16 @@ export function ApplicantDetailsPage() {
 
   const handleSaveNotes = async () => {
     setIsSavingNotes(true);
+    setNotesStatus("");
     try {
       const response = await updateApplicationNotes(session.accessToken, id, notes);
       if (response.application) {
         setApplication({ ...application, notes: response.application.notes });
-        alert("Notes saved successfully!");
+        setNotesStatus("saved");
+        setTimeout(() => setNotesStatus(""), 3000);
       }
     } catch (err) {
-      alert("Failed to save notes");
+      setNotesStatus("error");
     } finally {
       setIsSavingNotes(false);
     }
@@ -216,6 +219,47 @@ export function ApplicantDetailsPage() {
               </div>
             ) : (
               <p className="font-body-sm text-body-sm text-on-surface-variant italic">No cover letter provided.</p>
+            )}
+          </div>
+
+          {/* Documents & Links */}
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-lg">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-md flex items-center space-x-xs">
+              <Icon name="attach_file" className="text-primary" />
+              <span>Documents &amp; Links</span>
+            </h3>
+            {(application.resume_storage_path || application.portfolio_url || application.github_url) ? (
+              <div className="flex flex-wrap gap-sm">
+                {application.resume_storage_path && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const result = await getApplicationResumeUrl(session.accessToken, id);
+                        if (result.url) window.open(result.url, "_blank", "noopener");
+                      } catch {
+                        alert("Could not open the resume.");
+                      }
+                    }}
+                    className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 font-label-sm text-label-sm text-primary hover:bg-primary/15">
+                    <Icon name="description" className="text-[18px]" /> View Resume
+                  </button>
+                )}
+                {application.portfolio_url && (
+                  <a href={application.portfolio_url} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 font-label-sm text-label-sm text-primary hover:bg-primary/15">
+                    <Icon name="language" className="text-[18px]" /> Portfolio
+                  </a>
+                )}
+                {application.github_url && (
+                  <a href={application.github_url} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 font-label-sm text-label-sm text-primary hover:bg-primary/15">
+                    <Icon name="code" className="text-[18px]" /> GitHub
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="font-body-sm text-body-sm text-on-surface-variant italic">No documents or links provided.</p>
             )}
           </div>
 
@@ -360,6 +404,16 @@ export function ApplicantDetailsPage() {
               {isSavingNotes ? <Icon name="sync" className="animate-spin text-[16px]" /> : <Icon name="save" className="text-[16px]" />}
               <span>{isSavingNotes ? "Saving..." : "Save Notes"}</span>
             </button>
+            {notesStatus === "saved" && (
+              <p className="mt-xs flex items-center gap-xs font-label-sm text-label-sm text-green-600">
+                <Icon name="check_circle" className="text-[16px]" /> Notes saved
+              </p>
+            )}
+            {notesStatus === "error" && (
+              <p className="mt-xs flex items-center gap-xs font-label-sm text-label-sm text-error">
+                <Icon name="error" className="text-[16px]" /> Could not save notes
+              </p>
+            )}
           </div>
         </div>
 

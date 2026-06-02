@@ -6,6 +6,8 @@ import { ManageJobsPage } from "./employer/ManageJobsPage.jsx";
 import { EditJobPostPage } from "./employer/EditJobPostPage.jsx";
 import { ApplicantsPage } from "./employer/ApplicantsPage.jsx";
 import { ApplicantDetailsPage } from "./employer/ApplicantDetailsPage.jsx";
+import { CandidateSearchPage } from "./employer/CandidateSearchPage.jsx";
+import { SubscriptionPage } from "./employer/SubscriptionPage.jsx";
 
 export function EmployerApp() {
   return (
@@ -20,6 +22,8 @@ export function EmployerApp() {
           <Route path="jobs/:id/edit" element={<EditJobPostPage />} />
           <Route path="applicants" element={<ApplicantsPage />} />
           <Route path="applicants/:id" element={<ApplicantDetailsPage />} />
+          <Route path="candidates" element={<CandidateSearchPage />} />
+          <Route path="subscription" element={<SubscriptionPage />} />
           <Route path="*" element={<Navigate to="/employer/dashboard" replace />} />
         </Routes>
       </main>

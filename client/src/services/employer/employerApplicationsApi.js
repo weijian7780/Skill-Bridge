@@ -19,6 +19,15 @@ export function getEmployerApplication(token, id) {
   });
 }
 
+export function getApplicationResumeUrl(token, id) {
+  return apiRequest(`/employer/applications/${id}/resume-url`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export function updateApplicationStatus(token, id, status) {
   return apiRequest(`/employer/applications/${id}/status`, {
     method: "PATCH",

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon.jsx";
 import { useAppState } from "../state/AppStateContext.jsx";
+import { useAppliedJobIds } from "../state/useAppliedJobIds.js";
 import { buildPerJobAnalysis } from "../services/analysis/perJobAnalysis.js";
 import { generateRoadmapFromAnalysis } from "../services/roadmap/roadmapApi.js";
 
@@ -17,6 +18,7 @@ export default function JobDetailPanel({
 }) {
   const navigate = useNavigate();
   const { skillProfile, careerTarget, setRoadmapPlan } = useAppState();
+  const appliedJobIds = useAppliedJobIds();
 
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -178,12 +180,22 @@ export default function JobDetailPanel({
         {/* Action Buttons Row */}
         <div className="flex items-center gap-sm">
           {isInternal ? (
-            <button
-              onClick={() => navigate(applyPath)}
-              className="flex-1 h-11 inline-flex items-center justify-center rounded-xl bg-primary font-label-md text-label-md font-bold text-on-primary shadow-sm hover:bg-secondary active:scale-[0.98] transition-all"
-            >
-              Apply on SkillBridge
-            </button>
+            appliedJobIds.has(originalJob?.id) ? (
+              <button
+                disabled
+                className="flex-1 h-11 inline-flex items-center justify-center gap-xs rounded-xl bg-tertiary-container font-label-md text-label-md font-bold text-on-tertiary-container cursor-default"
+              >
+                <Icon name="check_circle" className="text-[18px]" />
+                Applied
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(applyPath)}
+                className="flex-1 h-11 inline-flex items-center justify-center rounded-xl bg-primary font-label-md text-label-md font-bold text-on-primary shadow-sm hover:bg-secondary active:scale-[0.98] transition-all"
+              >
+                Apply on SkillBridge
+              </button>
+            )
           ) : (
             <a
               href={url}

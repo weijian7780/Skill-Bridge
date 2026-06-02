@@ -166,6 +166,59 @@ employerApplicationsRouter.get("/:id", async (request, response) => {
   }
 });
 
+// GET /api/employer/applications/:id/resume-url -> short-lived signed URL for the resume
+employerApplicationsRouter.get("/:id/resume-url", async (request, response) => {
+  const { url, serviceRoleKey, fetchImpl } = request.supabase;
+  const employerId = request.user.id;
+  const applicationId = request.params.id;
+
+  try {
+    const appUrl = new URL("/rest/v1/applications", url);
+    appUrl.searchParams.set("id", `eq.${applicationId}`);
+    appUrl.searchParams.set("select", "job_id,resume_storage_path");
+    const appRes = await fetchImpl(appUrl.toString(), {
+      headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+    });
+    const apps = await appRes.json();
+    if (apps.length === 0) return response.status(404).json({ error: "Application not found" });
+    const application = apps[0];
+
+    // Verify the employer owns the job this application belongs to.
+    const jobUrl = new URL("/rest/v1/job_posts", url);
+    jobUrl.searchParams.set("id", `eq.${application.job_id}`);
+    jobUrl.searchParams.set("employer_id", `eq.${employerId}`);
+    const jobRes = await fetchImpl(jobUrl.toString(), {
+      headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+    });
+    const jobs = await jobRes.json();
+    if (jobs.length === 0) return response.status(403).json({ error: "Access denied" });
+
+    const path = application.resume_storage_path;
+    if (!path) return response.status(404).json({ error: "No resume on this application" });
+
+    // Generate a 1-hour signed URL for the private resumes bucket.
+    const signRes = await fetchImpl(`${url}/storage/v1/object/sign/resumes/${path}`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: 3600 }),
+    });
+
+    if (!signRes.ok) {
+      throw new Error(`Failed to sign resume URL: ${signRes.status}`);
+    }
+
+    const signed = await signRes.json();
+    response.json({ ok: true, url: `${url}/storage/v1${signed.signedURL}` });
+  } catch (error) {
+    console.error("Failed to generate resume URL:", error);
+    response.status(500).json({ error: "Failed to generate resume URL" });
+  }
+});
+
 // PATCH /api/employer/applications/:id/status
 employerApplicationsRouter.patch("/:id/status", async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;

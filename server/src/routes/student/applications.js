@@ -1,6 +1,50 @@
 import { Router } from "express";
+import multer from "multer";
 
 export const applicationsRouter = Router();
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+function safeFileName(name) {
+  return String(name || "resume").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+}
+
+// Upload a resume file to the public `resumes` bucket and return its public URL.
+applicationsRouter.post("/resume", upload.single("resume"), async (request, response) => {
+  const { url, serviceRoleKey, fetchImpl } = request.supabase;
+  const studentId = request.user.id;
+
+  if (!request.file) {
+    return response.status(400).json({ error: "No resume file uploaded" });
+  }
+
+  const path = `${studentId}/resume-${Date.now()}-${safeFileName(request.file.originalname)}`;
+
+  try {
+    const uploadUrl = `${url}/storage/v1/object/resumes/${path}`;
+    const uploadRes = await fetchImpl(uploadUrl, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": request.file.mimetype || "application/octet-stream",
+        "x-upsert": "true",
+      },
+      body: request.file.buffer,
+    });
+
+    if (!uploadRes.ok) {
+      const errorBody = await uploadRes.text();
+      throw new Error(`Storage upload failed: ${uploadRes.status} ${errorBody}`);
+    }
+
+    // Store the path (private bucket). Employers get a short-lived signed URL on demand.
+    response.status(201).json({ ok: true, path });
+  } catch (error) {
+    console.error("Failed to upload resume:", error);
+    response.status(500).json({ error: "Failed to upload resume" });
+  }
+});
 
 applicationsRouter.get("/", async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;
@@ -93,8 +137,8 @@ applicationsRouter.post("/", async (request, response) => {
 
     if (!insertResponse.ok) {
       const errorBody = await insertResponse.text();
-      // Handle unique constraint violation gracefully if needed
-      if (errorBody.includes("unique_violation")) {
+      // PostgREST reports a unique-constraint violation as code 23505 ("duplicate key").
+      if (errorBody.includes("23505") || errorBody.includes("duplicate key")) {
         return response.status(409).json({ error: "You have already applied for this job" });
       }
       throw new Error(`Supabase insert error: ${insertResponse.status} ${errorBody}`);

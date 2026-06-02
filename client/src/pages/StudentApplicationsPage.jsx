@@ -15,6 +15,7 @@ export function StudentApplicationsPage() {
   const { session } = useAuth();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     async function fetchApps() {
@@ -135,21 +136,65 @@ export function StudentApplicationsPage() {
             <h2 className="font-headline-md text-on-surface mb-md">Recent Applications</h2>
             <div className="space-y-sm">
               {applications.map(app => (
-                <div key={app.id} className="bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md">
-                  <div>
-                    <h3 className="font-headline-sm text-on-surface">{app.job_posts?.title || "Unknown Job"}</h3>
-                    <p className="font-body-sm text-on-surface-variant flex items-center space-x-sm mt-1">
-                      <span>Applied on {new Date(app.applied_at).toLocaleDateString()}</span>
-                    </p>
+                <div key={app.id} className="bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md">
+                    <div>
+                      <h3 className="font-headline-sm text-on-surface">{app.job_posts?.title || "Unknown Job"}</h3>
+                      <p className="font-body-sm text-on-surface-variant flex items-center space-x-sm mt-1">
+                        <span>Applied on {new Date(app.applied_at).toLocaleDateString()}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-md">
+                      <span className={`px-3 py-1 rounded-full border font-label-sm uppercase tracking-wide flex items-center space-x-xs ${getStatusColor(app.status)}`}>
+                        {app.status}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
+                        aria-label="View application details"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-high hover:bg-primary/20 text-primary transition-colors"
+                      >
+                        <Icon name={expandedId === app.id ? "expand_less" : "visibility"} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-md">
-                    <span className={`px-3 py-1 rounded-full border font-label-sm uppercase tracking-wide flex items-center space-x-xs ${getStatusColor(app.status)}`}>
-                      {app.status}
-                    </span>
-                    <Link to={`/jobs/${app.job_id}/apply`} className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-high hover:bg-primary/20 text-primary transition-colors">
-                      <Icon name="visibility" />
-                    </Link>
-                  </div>
+
+                  {expandedId === app.id && (
+                    <div className="mt-md pt-md border-t border-outline-variant space-y-md">
+                      <div>
+                        <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Cover letter</p>
+                        {app.cover_letter ? (
+                          <p className="font-body-sm text-body-sm text-on-surface whitespace-pre-wrap">{app.cover_letter}</p>
+                        ) : (
+                          <p className="font-body-sm text-body-sm text-on-surface-variant italic">No cover letter submitted.</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Submitted documents</p>
+                        <div className="flex flex-wrap gap-xs">
+                          {app.resume_storage_path && (
+                            <span className="inline-flex items-center gap-xs rounded-lg bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface">
+                              <Icon name="description" className="text-[16px]" /> Resume attached
+                            </span>
+                          )}
+                          {app.portfolio_url && (
+                            <a href={app.portfolio_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-3 py-1 font-label-sm text-label-sm text-primary hover:bg-primary/15">
+                              <Icon name="language" className="text-[16px]" /> Portfolio
+                            </a>
+                          )}
+                          {app.github_url && (
+                            <a href={app.github_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-xs rounded-lg border border-primary/30 bg-primary/10 px-3 py-1 font-label-sm text-label-sm text-primary hover:bg-primary/15">
+                              <Icon name="code" className="text-[16px]" /> GitHub
+                            </a>
+                          )}
+                          {!app.resume_storage_path && !app.portfolio_url && !app.github_url && (
+                            <span className="font-body-sm text-body-sm text-on-surface-variant italic">No documents submitted.</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
-import { applyForJob } from "../services/student/applicationApi.js";
+import { applyForJob, uploadResume } from "../services/student/applicationApi.js";
 import { useAuth } from "../state/AuthContext.jsx";
 
 export function JobApplyPage() {
@@ -15,6 +15,9 @@ export function JobApplyPage() {
   const [error, setError] = useState("");
   
   const [coverLetter, setCoverLetter] = useState("");
+  const [resumeFile, setResumeFile] = useState(null);
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -50,9 +53,21 @@ export function JobApplyPage() {
     setIsSubmitting(true);
 
     try {
+      let resumeStoragePath = "";
+      if (resumeFile) {
+        const uploadResult = await uploadResume(session.accessToken, resumeFile);
+        if (!uploadResult.ok) {
+          throw new Error(uploadResult.error || "Failed to upload resume");
+        }
+        resumeStoragePath = uploadResult.path;
+      }
+
       const response = await applyForJob(session.accessToken, {
         job_id: jobId,
         cover_letter: coverLetter,
+        resume_storage_path: resumeStoragePath,
+        portfolio_url: portfolioUrl.trim(),
+        github_url: githubUrl.trim(),
       });
 
       if (!response.ok) {
@@ -113,6 +128,45 @@ export function JobApplyPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-md">
+                <label className="block">
+                  <span className="mb-xs block font-label-md text-label-md text-on-surface">Resume / CV (Optional)</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-sm font-body-md text-body-md text-on-surface shadow-sm outline-none file:mr-sm file:rounded-lg file:border-0 file:bg-primary file:px-md file:py-xs file:text-on-primary"
+                    onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
+                    disabled={isSubmitting}
+                  />
+                  {resumeFile && (
+                    <span className="mt-xs block font-label-sm text-label-sm text-on-surface-variant">Selected: {resumeFile.name}</span>
+                  )}
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+                  <label className="block">
+                    <span className="mb-xs block font-label-md text-label-md text-on-surface">Portfolio URL (Optional)</span>
+                    <input
+                      type="url"
+                      className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-sm font-body-md text-body-md text-on-surface shadow-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+                      placeholder="https://your-portfolio.com"
+                      value={portfolioUrl}
+                      onChange={(e) => setPortfolioUrl(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-xs block font-label-md text-label-md text-on-surface">GitHub URL (Optional)</span>
+                    <input
+                      type="url"
+                      className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-sm font-body-md text-body-md text-on-surface shadow-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+                      placeholder="https://github.com/username"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </label>
+                </div>
+
                 <label className="block">
                   <span className="mb-xs block font-label-md text-label-md text-on-surface">Cover Letter (Optional)</span>
                   <textarea

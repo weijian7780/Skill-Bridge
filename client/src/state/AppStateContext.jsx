@@ -84,7 +84,7 @@ export function AppStateProvider({ children }) {
   const [loadedJobTargetKey, setLoadedJobTargetKey] = useState("");
   const [jobStatus, setJobStatus] = useState("Job API key not configured");
   const [roadmapPlan, setRoadmapPlan] = useState(null);
-  const [academicProfile, setAcademicProfile] = useState({ university: "UMS", studyYear: "Year 3", program: "Computer Science" });
+  const [academicProfile, setAcademicProfile] = useState({ university: "UMS", studyYear: "Year 3", program: "Computer Science", location: "", discoverable: false });
   const [syncStatus, setSyncStatus] = useState("Sign in to sync profile data.");
   const [loadedProfileFor, setLoadedProfileFor] = useState("");
   const skipProfileSaveFor = useRef("");
@@ -131,6 +131,8 @@ export function AppStateProvider({ children }) {
           university: result.snapshot.university || "UMS",
           studyYear: result.snapshot.study_year || "Year 3",
           program: result.snapshot.program || "Computer Science",
+          location: result.snapshot.location || "",
+          discoverable: result.snapshot.discoverable ?? false,
         });
         setSyncStatus("Supabase profile loaded.");
         skipProfileSaveFor.current = userId;
@@ -175,6 +177,9 @@ export function AppStateProvider({ children }) {
     async function saveSnapshot() {
       const snapshot = buildStudentProfileSnapshot({
         userId,
+        displayName: session?.user?.user_metadata?.display_name || "",
+        location: academicProfile.location,
+        discoverable: academicProfile.discoverable,
         university: academicProfile.university,
         studyYear: academicProfile.studyYear,
         program: academicProfile.program,

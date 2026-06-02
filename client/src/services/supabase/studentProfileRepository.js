@@ -56,6 +56,9 @@ function failedProfileResult(error, fallbackReason, extra = {}) {
 
 export function buildStudentProfileSnapshot({
   userId,
+  displayName = "",
+  location = "",
+  discoverable = false,
   university = "UMS",
   studyYear = "Year 3",
   program = "Computer Science",
@@ -69,6 +72,9 @@ export function buildStudentProfileSnapshot({
 }) {
   return {
     user_id: userId,
+    display_name: displayName,
+    location: location,
+    discoverable: discoverable,
     university: university,
     study_year: studyYear,
     program: program,

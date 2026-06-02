@@ -58,6 +58,39 @@ test("builds a Supabase profile snapshot without storing raw CV text", () => {
   assert.equal(JSON.stringify(snapshot).includes("private LLM prompt"), false);
 });
 
+test("stores employer-searchable identity, location and consent", () => {
+  const snapshot = buildStudentProfileSnapshot({
+    userId: "user-123",
+    displayName: "Alex Tan",
+    location: "sabah",
+    discoverable: true,
+    careerTarget: {},
+    skillProfile: {},
+    missingSkills: [],
+    roadmap: [],
+    cvDocument: null,
+  });
+
+  assert.equal(snapshot.display_name, "Alex Tan");
+  assert.equal(snapshot.location, "sabah");
+  assert.equal(snapshot.discoverable, true);
+});
+
+test("defaults to private (not discoverable) with no location or name", () => {
+  const snapshot = buildStudentProfileSnapshot({
+    userId: "user-123",
+    careerTarget: {},
+    skillProfile: {},
+    missingSkills: [],
+    roadmap: [],
+    cvDocument: null,
+  });
+
+  assert.equal(snapshot.display_name, "");
+  assert.equal(snapshot.location, "");
+  assert.equal(snapshot.discoverable, false);
+});
+
 test("does not write prototype profile metrics when calculated values are missing", () => {
   const snapshot = buildStudentProfileSnapshot({
     userId: "user-123",

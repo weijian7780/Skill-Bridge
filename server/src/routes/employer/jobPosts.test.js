@@ -51,6 +51,10 @@ test("POST /job-posts creates a new job post in Supabase and returns it", async 
 
   const calls = [];
   const fetchImpl = async (url, options) => {
+    // The subscription gate checks employer_subscriptions first; report active.
+    if (String(url).includes("employer_subscriptions")) {
+      return { ok: true, status: 200, async json() { return [{ status: "active", expires_at: "2999-01-01T00:00:00Z" }]; } };
+    }
     calls.push({ url, options });
     return {
       ok: true,

@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icon.jsx";
 import { useAuth } from "../../state/AuthContext.jsx";
+import { useEmployerSubscription } from "../../state/useEmployerSubscription.js";
 import { getEmployerJobs, deleteEmployerJob, updateEmployerJobStatus } from "../../services/employer/employerJobsApi.js";
 
 export function ManageJobsPage() {
   const { session } = useAuth();
+  const { active: subscribed } = useEmployerSubscription();
+  const postJobTarget = subscribed ? "/employer/jobs/new" : "/employer/subscription";
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,12 +65,12 @@ export function ManageJobsPage() {
           <h1 className="font-headline-md text-headline-md text-on-surface">Manage Jobs</h1>
           <p className="font-body-md text-body-md text-on-surface-variant">View and edit your job postings.</p>
         </div>
-        <Link 
-          to="/employer/jobs/new"
+        <Link
+          to={postJobTarget}
           className="flex items-center space-x-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-secondary transition-all"
         >
-          <Icon name="add" className="text-[18px]" />
-          <span>Post a Job</span>
+          <Icon name={subscribed ? "add" : "lock"} className="text-[18px]" />
+          <span>{subscribed ? "Post a Job" : "Subscribe to Post"}</span>
         </Link>
       </div>
 
@@ -84,11 +87,11 @@ export function ManageJobsPage() {
             <h3 className="font-headline-sm text-headline-sm text-on-surface">No jobs posted yet</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Get started by creating your first job post.</p>
           </div>
-          <Link 
-            to="/employer/jobs/new"
+          <Link
+            to={postJobTarget}
             className="flex items-center space-x-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-secondary transition-all"
           >
-            <span>Create Job Post</span>
+            <span>{subscribed ? "Create Job Post" : "Subscribe to Post"}</span>
           </Link>
         </div>
       ) : (

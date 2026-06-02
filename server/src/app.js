@@ -9,6 +9,9 @@ import { jobPostsRouter } from "./routes/employer/jobPosts.js";
 import { employerApplicationsRouter } from "./routes/employer/applications.js";
 import { employerStatsRouter } from "./routes/employer/stats.js";
 import { employerInterviewsRouter } from "./routes/employer/interviews.js";
+import { subscriptionRouter } from "./routes/employer/subscription.js";
+import { candidatesRouter } from "./routes/employer/candidates.js";
+import { requireActiveSubscription } from "./middleware/subscription.js";
 import { applicationsRouter } from "./routes/student/applications.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
 
@@ -58,10 +61,15 @@ export function createApp() {
   app.use("/api/employer", requireAuth(authConfig));
   app.use("/api/employer", requireRole("employer"));
   app.use("/api/employer/profile", profileRouter);
+  app.use("/api/employer/subscription", subscriptionRouter);
   app.use("/api/employer/job-posts", jobPostsRouter);
-  app.use("/api/employer/applications", employerApplicationsRouter);
   app.use("/api/employer/stats", employerStatsRouter);
-  app.use("/api/employer/interviews", employerInterviewsRouter);
+  // Reviewing/managing applicants & interviews is a premium feature. Data is
+  // never deleted — access is simply gated until the subscription is active again.
+  app.use("/api/employer/applications", requireActiveSubscription, employerApplicationsRouter);
+  app.use("/api/employer/interviews", requireActiveSubscription, employerInterviewsRouter);
+  // Candidate search & verified skill profiles — gated by active subscription.
+  app.use("/api/employer/candidates", requireActiveSubscription, candidatesRouter);
 
   // Protected student routes
   app.use("/api/student", (request, _response, next) => {

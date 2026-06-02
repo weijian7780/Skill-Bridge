@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../../components/Icon.jsx";
 import { useAuth } from "../../state/AuthContext.jsx";
+import { useEmployerSubscription } from "../../state/useEmployerSubscription.js";
 import { getEmployerApplications } from "../../services/employer/employerApplicationsApi.js";
 
 export function ApplicantsPage() {
   const { session } = useAuth();
+  const { active: subscribed, loading: subLoading } = useEmployerSubscription();
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +21,10 @@ export function ApplicantsPage() {
     async function loadApplications() {
       if (!session?.accessToken) return;
       setIsLoading(true);
+      if (!subscribed) {
+        setIsLoading(false);
+        return;
+      }
       try {
         const response = await getEmployerApplications(session.accessToken);
         setApplications(response.applications || []);
@@ -29,7 +35,34 @@ export function ApplicantsPage() {
       }
     }
     loadApplications();
-  }, [session]);
+  }, [session, subscribed]);
+
+  if (subLoading) {
+    return (
+      <div className="flex-1 p-md md:p-xl flex items-center justify-center">
+        <p className="font-label-md text-label-md text-on-surface-variant">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!subscribed) {
+    return (
+      <div className="flex-1 p-md md:p-xl">
+        <div className="bg-surface-container border border-outline-variant rounded-2xl p-lg flex flex-col items-start gap-sm max-w-xl">
+          <div className="flex items-center gap-sm text-primary">
+            <Icon name="lock" />
+            <h2 className="font-headline-md text-headline-md">Reviewing applicants is a premium feature</h2>
+          </div>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Your applicants are safe — subscribe to review and manage them again. Nothing has been deleted.
+          </p>
+          <Link to="/employer/subscription" className="mt-sm inline-flex items-center gap-xs rounded-lg bg-primary px-lg py-sm font-label-md text-label-md text-on-primary active:scale-[0.98]">
+            View subscription <Icon name="arrow_forward" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
