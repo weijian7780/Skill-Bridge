@@ -84,7 +84,7 @@ export function HomePage() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [savedJobs, setSavedJobs] = useState([]);
 
-  const displayName = session?.user?.email?.split("@")[0] || "Student";
+  const displayName = session?.user?.user_metadata?.display_name || session?.user?.email?.split("@")[0] || "Student";
   const hasConfirmedCv = skillProfile?.technicalSkills?.length > 0;
   const regionOption = getRegionOption(careerTarget.region);
   const suggestedRole = suggestTargetRole({ careerTarget, skillProfile });
