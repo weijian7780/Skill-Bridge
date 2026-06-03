@@ -54,7 +54,7 @@ export async function fetchSavedJobs({ config, accessToken }) {
  * @param {Object} opts.jobData      – full job payload to persist
  * @returns {Promise<Object>} the created saved_jobs record
  */
-export async function saveJob({ config, accessToken, jobId, jobSource, jobData }) {
+export async function saveJob({ config, accessToken, userId, jobId, jobSource, jobData }) {
   if (!config?.url || !config?.publishableKey) {
     throw new Error("Supabase not configured");
   }
@@ -69,6 +69,8 @@ export async function saveJob({ config, accessToken, jobId, jobSource, jobData }
       Prefer: "return=representation",
     },
     body: JSON.stringify({
+      // user_id is required and RLS enforces it equals the signed-in user.
+      user_id: userId,
       job_id: jobId,
       job_source: jobSource,
       job_data: jobData,

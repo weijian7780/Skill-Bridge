@@ -78,6 +78,7 @@ test("savedJobsApi - saveJob", async () => {
     const result = await saveJob({
       config: mockConfig,
       accessToken: mockToken,
+      userId: "user-42",
       jobId: "job-1",
       jobSource: "market",
       jobData,
@@ -88,6 +89,7 @@ test("savedJobsApi - saveJob", async () => {
     assert.equal(calledOptions.headers.Prefer, "return=representation");
     const parsedBody = JSON.parse(calledOptions.body);
     assert.deepEqual(parsedBody, {
+      user_id: "user-42",
       job_id: "job-1",
       job_source: "market",
       job_data: jobData,

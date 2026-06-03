@@ -1,7 +1,8 @@
 import { NavLink } from "react-router-dom";
+import { Icon } from "./Icon.jsx";
 import { appNavigationItems } from "../services/navigation/appNavigation.js";
 
-export function AppHeader({ simple = false }) {
+export function AppHeader({ simple = false, headerRight = null }) {
   return (
     <header className="fixed top-0 w-full bg-surface-container/95 backdrop-blur flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 z-50 border-b border-outline-variant shadow-sm">
       <div className="flex items-center gap-4">
@@ -25,6 +26,24 @@ export function AppHeader({ simple = false }) {
           ))}
         </nav>
       )}
+
+      <div className="flex items-center gap-xs">
+        {!simple && (
+          <NavLink
+            to="/saved"
+            title="Saved jobs"
+            aria-label="Saved jobs"
+            className={({ isActive }) =>
+              `flex h-10 w-10 items-center justify-center rounded-full transition-colors active:scale-95 ${
+                isActive ? "bg-primary-container text-primary" : "text-on-surface-variant hover:bg-surface-container-high"
+              }`
+            }
+          >
+            {({ isActive }) => <Icon name="bookmarks" filled={isActive} />}
+          </NavLink>
+        )}
+        {headerRight}
+      </div>
     </header>
   );
 }

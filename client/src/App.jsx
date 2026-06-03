@@ -18,6 +18,7 @@ const RoadmapPage = lazyPage(() => import("./pages/RoadmapPage.jsx"), "RoadmapPa
 const ProfilePage = lazyPage(() => import("./pages/ProfilePage.jsx"), "ProfilePage");
 const JobApplyPage = lazyPage(() => import("./pages/JobApplyPage.jsx"), "JobApplyPage");
 const StudentApplicationsPage = lazyPage(() => import("./pages/StudentApplicationsPage.jsx"), "StudentApplicationsPage");
+const SavedJobsPage = lazyPage(() => import("./pages/SavedJobsPage.jsx"), "SavedJobsPage");
 const StudentSetupPage = lazyPage(() => import("./pages/StudentSetupPage.jsx"), "StudentSetupPage");
 const SettingsPage = lazyPage(() => import("./pages/SettingsPage.jsx"), "SettingsPage");
 const EmployerApp = lazyPage(() => import("./pages/EmployerApp.jsx"), "EmployerApp");
@@ -128,6 +129,7 @@ export default function App() {
       <Route path="/settings" element={<RequireAuth><RequireRole role="student"><RequireSetup><SettingsPage /></RequireSetup></RequireRole></RequireAuth>} />
       <Route path="/jobs" element={<RequireAuth><RequireRole role="student"><RequireSetup><Navigate to="/home#jobs" replace /></RequireSetup></RequireRole></RequireAuth>} />
       <Route path="/applications" element={<RequireAuth><RequireRole role="student"><RequireSetup><StudentApplicationsPage /></RequireSetup></RequireRole></RequireAuth>} />
+      <Route path="/saved" element={<RequireAuth><RequireRole role="student"><RequireSetup><SavedJobsPage /></RequireSetup></RequireRole></RequireAuth>} />
       <Route path="/jobs/:id/apply" element={<RequireAuth><RequireRole role="student"><RequireSetup><JobApplyPage /></RequireSetup></RequireRole></RequireAuth>} />
 
       {/* Employer routes */}

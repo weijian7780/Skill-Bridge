@@ -238,6 +238,7 @@ export function HomePage() {
         const newSaved = await saveJob({
           config,
           accessToken: session.accessToken,
+          userId: session.user.id,
           jobId: jobCard.id,
           jobSource: jobCard.source,
           jobData: jobCard,
