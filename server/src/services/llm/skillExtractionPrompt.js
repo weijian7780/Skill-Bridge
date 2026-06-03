@@ -27,9 +27,14 @@ export function buildExtractionPrompt(cvText) {
 
 export function parseJsonResponse(text) {
   const cleaned = String(text || "")
-    .replace(/^```json/i, "")
-    .replace(/^```/i, "")
-    .replace(/```$/i, "")
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
     .trim();
-  return JSON.parse(cleaned);
+
+  // If the model wrapped the JSON in prose, keep only the outermost { ... } block.
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  const jsonSlice = start !== -1 && end > start ? cleaned.slice(start, end + 1) : cleaned;
+
+  return JSON.parse(jsonSlice);
 }

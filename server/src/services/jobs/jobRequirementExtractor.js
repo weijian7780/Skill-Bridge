@@ -75,6 +75,7 @@ export async function extractJobRequirementProfiles(jobs = []) {
         },
       ],
       maxTokens: 3000,
+      responseFormat: { type: "json_object" },
     });
 
     const parsedProfiles = parseBatchRequirementResponse(parseJsonResponse(content), jobsWithText);

@@ -15,6 +15,7 @@ export async function extractWithGemini(cvText) {
       },
     ],
     maxTokens: 900,
+    responseFormat: { type: "json_object" },
   });
 
   return parseJsonResponse(content);
@@ -44,7 +45,7 @@ export async function extractCvImageTextWithGemini({ buffer, filename, mimeType 
   });
 }
 
-export async function createGeminiChatCompletion({ model, messages, maxTokens }) {
+export async function createGeminiChatCompletion({ model, messages, maxTokens, responseFormat }) {
   if (!process.env.GEMINI_API_KEY) {
     const error = new Error("GEMINI_API_KEY is not configured.");
     error.statusCode = 400;
@@ -66,6 +67,7 @@ export async function createGeminiChatCompletion({ model, messages, maxTokens })
         messages,
         temperature: 0,
         max_tokens: maxTokens,
+        ...(responseFormat ? { response_format: responseFormat } : {}),
       }),
     });
 
