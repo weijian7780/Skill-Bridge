@@ -25,11 +25,8 @@ export function RoleChooserPage() {
         </div>
 
         <div className="max-w-[1280px] w-full flex flex-col items-center relative z-10">
-          <div className="flex items-center space-x-sm mb-base">
-            <Icon name="conversion_path" className="text-primary text-[32px]" />
-            <h1 className="font-headline-xl-mobile md:font-headline-xl text-headline-xl-mobile md:text-headline-xl text-on-surface">
-              SkillBridge
-            </h1>
+          <div className="w-full flex items-center justify-center mb-base">
+            <img src="/skillbridge-logo.png" alt="SkillBridge" className="h-32 md:h-52 w-auto max-w-full object-contain" />
           </div>
 
           <h2 className="font-headline-lg text-headline-lg text-on-background text-center mb-base">
@@ -73,7 +70,7 @@ export function RoleChooserPage() {
 
           <div className="text-center pt-lg">
             <span className="font-body-sm text-body-sm text-on-surface-variant">Already have an account? </span>
-            <Link to="/" className="font-label-sm text-label-sm text-primary hover:underline">Log in</Link>
+            <Link to="/login" className="font-label-sm text-label-sm text-primary hover:underline">Log in</Link>
           </div>
         </div>
       </main>

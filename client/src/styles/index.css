@@ -30,7 +30,16 @@ a {
 .bridge-path {
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
-  animation: dash 3s ease-in-out forwards;
+  /* Gently draw and retrace the lines forever for a smooth, continuous flow. */
+  animation: dash 9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+/* Stagger the three layers so they ripple instead of moving in lockstep. */
+.bridge-path:nth-of-type(2) {
+  animation-delay: 0.8s;
+}
+.bridge-path:nth-of-type(3) {
+  animation-delay: 1.6s;
 }
 
 @keyframes dash {

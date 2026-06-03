@@ -1,17 +1,17 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { RoleChooserPage } from "./pages/RoleChooserPage.jsx";
 import { useAuth } from "./state/AuthContext.jsx";
 
 // Route components are code-split so the initial bundle stays small. Each page
-// is loaded on demand the first time its route is visited. LoginPage stays
-// eager because it is the first paint for unauthenticated visitors.
+// is loaded on demand the first time its route is visited. LoginPage and
+// RoleChooserPage stay eager because they are the first paint for visitors.
 const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })));
 
 const SignupPage = lazyPage(() => import("./pages/SignupPage.jsx"), "SignupPage");
 const ForgotPasswordPage = lazyPage(() => import("./pages/ForgotPasswordPage.jsx"), "ForgotPasswordPage");
 const ResetPasswordPage = lazyPage(() => import("./pages/ResetPasswordPage.jsx"), "ResetPasswordPage");
-const RoleChooserPage = lazyPage(() => import("./pages/RoleChooserPage.jsx"), "RoleChooserPage");
 const SignupEmployerPage = lazyPage(() => import("./pages/SignupEmployerPage.jsx"), "SignupEmployerPage");
 const HomePage = lazyPage(() => import("./pages/HomePage.jsx"), "HomePage");
 const RoadmapPage = lazyPage(() => import("./pages/RoadmapPage.jsx"), "RoadmapPage");
@@ -100,7 +100,9 @@ function AuthRedirect() {
     return <Navigate to={role === "employer" ? "/employer/dashboard" : "/home"} replace />;
   }
 
-  return <LoginPage />;
+  // Logged-out visitors land on the role chooser (Student / Employer), with a
+  // "Log in" link to /login — so both signup paths are visible up front.
+  return <RoleChooserPage />;
 }
 
 export default function App() {
@@ -108,6 +110,7 @@ export default function App() {
     <Suspense fallback={<PageLoading />}>
     <Routes>
       <Route path="/" element={<AuthRedirect />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<RoleChooserPage />} />
       <Route path="/signup/student" element={<SignupPage />} />
       <Route path="/signup/employer" element={<SignupEmployerPage />} />

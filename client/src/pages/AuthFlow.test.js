@@ -26,7 +26,7 @@ describe("Authentication Flow Separation", () => {
     
     if (existsSync(signupPageUrl)) {
       const signupSource = readFileSync(signupPageUrl, "utf8");
-      assert.ok(signupSource.includes('to="/"'), "SignupPage should have a Link back to / (login)");
+      assert.ok(signupSource.includes('to="/login"'), "SignupPage should have a Link to the login page");
       assert.ok(signupSource.includes('handleCreateAccount'), "SignupPage should handle account creation");
     }
   });

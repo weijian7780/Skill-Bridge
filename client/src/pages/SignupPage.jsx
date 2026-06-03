@@ -41,11 +41,8 @@ export function SignupPage() {
 
         <div className="max-w-[1280px] w-full grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center relative z-10">
           <section className="lg:col-span-7 flex flex-col space-y-md">
-            <div className="flex items-center space-x-sm mb-base">
-              <Icon name="conversion_path" className="text-primary text-[32px]" />
-              <h1 className="font-headline-xl-mobile md:font-headline-xl text-headline-xl-mobile md:text-headline-xl text-on-surface">
-                SkillBridge
-              </h1>
+            <div className="flex items-center -ml-2 mb-base">
+              <img src="/skillbridge-logo.png" alt="SkillBridge" className="h-40 md:h-56 w-auto max-w-full object-contain" />
             </div>
             <h2 className="font-headline-lg text-headline-lg text-on-background max-w-xl">
               Bridge your skills to your future career
@@ -105,7 +102,7 @@ export function SignupPage() {
                   </button>
                   <div className="text-center pt-xs">
                     <span className="font-body-sm text-body-sm text-on-surface-variant">Already have an account? </span>
-                    <Link to="/" className="font-label-sm text-label-sm text-primary hover:underline">Log in</Link>
+                    <Link to="/login" className="font-label-sm text-label-sm text-primary hover:underline">Log in</Link>
                   </div>
                 </div>
               </form>
