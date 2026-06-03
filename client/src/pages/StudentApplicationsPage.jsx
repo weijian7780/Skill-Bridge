@@ -216,6 +216,15 @@ export function StudentApplicationsPage() {
                         </div>
                       )}
 
+                      {app.status === "interview" && (!Array.isArray(app.interviews) || app.interviews.length === 0) && (
+                        <div>
+                          <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Interview</p>
+                          <p className="font-body-sm text-body-sm text-on-surface-variant italic">
+                            The employer is arranging your interview. Details will appear here once scheduled.
+                          </p>
+                        </div>
+                      )}
+
                       <div>
                         <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Submitted documents</p>
                         <div className="flex flex-wrap gap-xs">

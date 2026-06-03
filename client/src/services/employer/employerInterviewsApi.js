@@ -19,3 +19,23 @@ export function getEmployerInterviews(token, applicationId) {
     },
   });
 }
+
+export function updateEmployerInterview(token, id, interviewData) {
+  return apiRequest(`/employer/interviews/${id}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(interviewData),
+  });
+}
+
+export function deleteEmployerInterview(token, id) {
+  return apiRequest(`/employer/interviews/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}

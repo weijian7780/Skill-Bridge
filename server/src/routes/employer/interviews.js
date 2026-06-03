@@ -102,6 +102,101 @@ employerInterviewsRouter.post("/", async (request, response) => {
   }
 });
 
+// Verify the employer owns the job behind a given interview.
+async function verifyInterviewOwnership({ url, serviceRoleKey, fetchImpl }, interviewId, employerId) {
+  const ivUrl = new URL("/rest/v1/interviews", url);
+  ivUrl.searchParams.set("id", `eq.${interviewId}`);
+  ivUrl.searchParams.set("select", "id,application_id");
+  const ivRes = await fetchImpl(ivUrl.toString(), {
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+  });
+  const ivs = await ivRes.json();
+  if (!ivs.length) return { ok: false, status: 404, error: "Interview not found" };
+
+  const appUrl = new URL("/rest/v1/applications", url);
+  appUrl.searchParams.set("id", `eq.${ivs[0].application_id}`);
+  appUrl.searchParams.set("select", "job_id");
+  const appRes = await fetchImpl(appUrl.toString(), {
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+  });
+  const apps = await appRes.json();
+  if (!apps.length) return { ok: false, status: 404, error: "Application not found" };
+
+  const jobUrl = new URL("/rest/v1/job_posts", url);
+  jobUrl.searchParams.set("id", `eq.${apps[0].job_id}`);
+  jobUrl.searchParams.set("employer_id", `eq.${employerId}`);
+  const jobRes = await fetchImpl(jobUrl.toString(), {
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+  });
+  const jobs = await jobRes.json();
+  if (!jobs.length) return { ok: false, status: 403, error: "Access denied" };
+
+  return { ok: true };
+}
+
+// PATCH /api/employer/interviews/:id  -> edit a scheduled interview
+employerInterviewsRouter.patch("/:id", async (request, response) => {
+  const { url, serviceRoleKey, fetchImpl } = request.supabase;
+  const employerId = request.user.id;
+  const interviewId = request.params.id;
+
+  try {
+    const owns = await verifyInterviewOwnership(request.supabase, interviewId, employerId);
+    if (!owns.ok) return response.status(owns.status).json({ error: owns.error });
+
+    const allowed = ["scheduled_at", "duration_minutes", "location", "meeting_link", "notes", "status"];
+    const updates = {};
+    for (const key of allowed) {
+      if (key in request.body) updates[key] = request.body[key];
+    }
+
+    const updateUrl = new URL("/rest/v1/interviews", url);
+    updateUrl.searchParams.set("id", `eq.${interviewId}`);
+    const updateRes = await fetchImpl(updateUrl.toString(), {
+      method: "PATCH",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!updateRes.ok) throw new Error("Failed to update interview");
+    const updated = await updateRes.json();
+    response.json({ ok: true, interview: updated[0] });
+  } catch (error) {
+    console.error("Failed to update interview:", error);
+    response.status(500).json({ error: "Failed to update interview" });
+  }
+});
+
+// DELETE /api/employer/interviews/:id  -> cancel/remove a scheduled interview
+employerInterviewsRouter.delete("/:id", async (request, response) => {
+  const { url, serviceRoleKey, fetchImpl } = request.supabase;
+  const employerId = request.user.id;
+  const interviewId = request.params.id;
+
+  try {
+    const owns = await verifyInterviewOwnership(request.supabase, interviewId, employerId);
+    if (!owns.ok) return response.status(owns.status).json({ error: owns.error });
+
+    const deleteUrl = new URL("/rest/v1/interviews", url);
+    deleteUrl.searchParams.set("id", `eq.${interviewId}`);
+    const deleteRes = await fetchImpl(deleteUrl.toString(), {
+      method: "DELETE",
+      headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+    });
+
+    if (!deleteRes.ok) throw new Error("Failed to delete interview");
+    response.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to delete interview:", error);
+    response.status(500).json({ error: "Failed to delete interview" });
+  }
+});
+
 // GET /api/employer/interviews?application_id=...
 employerInterviewsRouter.get("/", async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;

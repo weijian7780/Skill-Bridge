@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Icon } from "../../components/Icon.jsx";
 import { useAuth } from "../../state/AuthContext.jsx";
 import { getEmployerApplication, updateApplicationStatus, updateApplicationNotes, getApplicationResumeUrl } from "../../services/employer/employerApplicationsApi.js";
-import { createEmployerInterview, getEmployerInterviews } from "../../services/employer/employerInterviewsApi.js";
+import { createEmployerInterview, getEmployerInterviews, updateEmployerInterview, deleteEmployerInterview } from "../../services/employer/employerInterviewsApi.js";
+import { ConfirmModal } from "../../components/ConfirmModal.jsx";
 
 export function ApplicantDetailsPage() {
   const { id } = useParams();
@@ -21,6 +22,8 @@ export function ApplicantDetailsPage() {
 
   // Interview Scheduler State
   const [showScheduler, setShowScheduler] = useState(false);
+  const [editingInterviewId, setEditingInterviewId] = useState(null);
+  const [interviewToDelete, setInterviewToDelete] = useState(null);
   const [scheduleData, setScheduleData] = useState({
     scheduled_at: "",
     duration_minutes: 30,
@@ -89,20 +92,57 @@ export function ApplicantDetailsPage() {
     e.preventDefault();
     setIsScheduling(true);
     try {
-      const response = await createEmployerInterview(session.accessToken, {
-        application_id: id,
-        ...scheduleData
-      });
-      if (response.interview) {
-        setInterviews([response.interview, ...interviews]);
-        setShowScheduler(false);
-        setApplication({ ...application, status: "interview" });
-        alert("Interview scheduled successfully!");
+      if (editingInterviewId) {
+        const response = await updateEmployerInterview(session.accessToken, editingInterviewId, scheduleData);
+        if (response.interview) {
+          setInterviews(interviews.map((iv) => (iv.id === editingInterviewId ? response.interview : iv)));
+        }
+      } else {
+        const response = await createEmployerInterview(session.accessToken, {
+          application_id: id,
+          ...scheduleData,
+        });
+        if (response.interview) {
+          setInterviews([response.interview, ...interviews]);
+          setApplication({ ...application, status: "interview" });
+        }
       }
+      setShowScheduler(false);
+      setEditingInterviewId(null);
     } catch (err) {
-      alert("Failed to schedule interview");
+      alert("Failed to save interview");
     } finally {
       setIsScheduling(false);
+    }
+  };
+
+  const startEditInterview = (interview) => {
+    setEditingInterviewId(interview.id);
+    setScheduleData({
+      scheduled_at: interview.scheduled_at ? interview.scheduled_at.slice(0, 16) : "",
+      duration_minutes: interview.duration_minutes || 30,
+      location: interview.location || "",
+      meeting_link: interview.meeting_link || "",
+    });
+    setShowScheduler(true);
+  };
+
+  const confirmDeleteInterview = async () => {
+    const interviewId = interviewToDelete;
+    setInterviewToDelete(null);
+    try {
+      await deleteEmployerInterview(session.accessToken, interviewId);
+      const remaining = interviews.filter((iv) => iv.id !== interviewId);
+      setInterviews(remaining);
+      // If no interviews remain, drop the status back from "interview" to "shortlisted".
+      if (remaining.length === 0 && application.status === "interview") {
+        const result = await updateApplicationStatus(session.accessToken, id, "shortlisted");
+        if (result.application) {
+          setApplication({ ...application, status: result.application.status });
+        }
+      }
+    } catch (err) {
+      alert("Failed to delete interview");
     }
   };
 
@@ -271,8 +311,12 @@ export function ApplicantDetailsPage() {
                 <span>Interviews</span>
               </h3>
               {!showScheduler && (
-                <button 
-                  onClick={() => setShowScheduler(true)}
+                <button
+                  onClick={() => {
+                    setEditingInterviewId(null);
+                    setScheduleData({ scheduled_at: "", duration_minutes: 30, location: "", meeting_link: "" });
+                    setShowScheduler(true);
+                  }}
                   className="px-3 py-1.5 bg-primary/10 text-primary font-label-sm rounded hover:bg-primary/20 transition-colors"
                 >
                   + Schedule Interview
@@ -324,9 +368,9 @@ export function ApplicantDetailsPage() {
                   </div>
                 </div>
                 <div className="flex justify-end space-x-sm pt-sm">
-                  <button type="button" onClick={() => setShowScheduler(false)} className="px-4 py-1.5 text-on-surface-variant font-label-sm hover:text-on-surface">Cancel</button>
+                  <button type="button" onClick={() => { setShowScheduler(false); setEditingInterviewId(null); }} className="px-4 py-1.5 text-on-surface-variant font-label-sm hover:text-on-surface">Cancel</button>
                   <button type="submit" disabled={isScheduling} className="px-4 py-1.5 bg-primary text-on-primary font-label-sm rounded hover:bg-secondary disabled:opacity-50">
-                    {isScheduling ? "Scheduling..." : "Confirm Schedule"}
+                    {isScheduling ? "Saving..." : editingInterviewId ? "Update Interview" : "Confirm Schedule"}
                   </button>
                 </div>
               </form>
@@ -344,9 +388,17 @@ export function ApplicantDetailsPage() {
                         {inv.location || "No location"} {inv.meeting_link && <a href={inv.meeting_link} target="_blank" rel="noreferrer" className="text-primary hover:underline ml-2">Join Link</a>}
                       </p>
                     </div>
-                    <span className="px-2 py-1 rounded bg-teal-500/20 text-teal-700 font-label-sm uppercase text-[10px]">
-                      {inv.status}
-                    </span>
+                    <div className="flex items-center gap-xs">
+                      <span className="px-2 py-1 rounded bg-teal-500/20 text-teal-700 font-label-sm uppercase text-[10px]">
+                        {inv.status}
+                      </span>
+                      <button onClick={() => startEditInterview(inv)} aria-label="Edit interview" className="p-1 rounded hover:bg-surface-container-high text-on-surface-variant">
+                        <Icon name="edit" className="text-[18px]" />
+                      </button>
+                      <button onClick={() => setInterviewToDelete(inv.id)} aria-label="Cancel interview" className="p-1 rounded hover:bg-error/10 text-on-surface-variant hover:text-error">
+                        <Icon name="delete" className="text-[18px]" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -418,6 +470,17 @@ export function ApplicantDetailsPage() {
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(interviewToDelete)}
+        title="Cancel interview?"
+        message="This will remove the scheduled interview. The candidate will no longer see it. This cannot be undone."
+        confirmText="Cancel interview"
+        cancelText="Keep"
+        isDestructive
+        onConfirm={confirmDeleteInterview}
+        onCancel={() => setInterviewToDelete(null)}
+      />
     </div>
   );
 }
