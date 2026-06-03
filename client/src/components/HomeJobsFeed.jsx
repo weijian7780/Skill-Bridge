@@ -156,13 +156,6 @@ export function HomeJobsFeed({
     ],
   );
 
-  // Automatically select the first job in the feed on desktop if none selected yet
-  useEffect(() => {
-    if (feedCards.length > 0 && !selectedJobId && onSelectJob && typeof window !== "undefined" && window.innerWidth >= 1024) {
-      onSelectJob(feedCards[0]);
-    }
-  }, [feedCards, selectedJobId, onSelectJob]);
-
   return (
     <section
       id="jobs"

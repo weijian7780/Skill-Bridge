@@ -265,7 +265,7 @@ export function HomePage() {
         </div>
 
         {/* Header Search Section (Sticky) */}
-        <section className="sticky top-20 z-20 bg-surface-container border border-outline-variant rounded-xl p-sm shadow-sm">
+        <section className="bg-surface-container border border-outline-variant rounded-xl p-sm shadow-sm">
           <form className="grid grid-cols-1 gap-sm lg:grid-cols-[minmax(0,1.6fr)_minmax(220px,0.65fr)_auto]" onSubmit={saveTargetAndSearch}>
             <label className="relative block">
               <span className="sr-only">Target role</span>
