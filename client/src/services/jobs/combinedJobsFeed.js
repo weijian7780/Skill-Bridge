@@ -113,8 +113,34 @@ export function scoreInternalJobRole(job, targetRole) {
   return score;
 }
 
+// A job is relevant when the role's DISCRIMINATING (specific) words appear. A
+// generic word alone (analyst/engineer/developer...) is not enough, so a "Data
+// Analyst" target no longer matches every "Business Analyst" post. Only a role
+// made up of generic words alone falls back to accepting a generic-word match.
 export function matchesInternalJobRole(job, targetRole) {
-  return scoreInternalJobRole(job, targetRole) > 0;
+  const role = String(targetRole ?? "").trim().toLowerCase();
+  if (!role) {
+    return false;
+  }
+
+  const title = String(job.title ?? "").toLowerCase();
+  const category = String(job.category ?? "").toLowerCase();
+  const skills = (job.required_skills ?? []).map((skill) => String(skill).toLowerCase());
+
+  // Phrase match always qualifies.
+  if (title.includes(role) || category.includes(role)) {
+    return true;
+  }
+
+  const tokens = role.split(/\s+/).filter((token) => token.length >= 2);
+  const matches = (token) =>
+    title.includes(token) || category.includes(token) || skills.some((skill) => skill.includes(token));
+  const specificTokens = tokens.filter((token) => !GENERIC_ROLE_TOKENS.has(token));
+
+  if (specificTokens.length > 0) {
+    return specificTokens.some(matches);
+  }
+  return tokens.some(matches);
 }
 
 export function hashSeed(seed) {

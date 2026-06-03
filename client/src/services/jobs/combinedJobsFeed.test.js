@@ -215,19 +215,20 @@ test("scoreInternalJobRole ranks exact phrase match above generic-token-only mat
   assert.ok(aiScore > 0, "AI Engineer should have positive score");
 });
 
-test("buildCombinedJobsFeed sorts internal matches by relevance score", () => {
+test("buildCombinedJobsFeed drops generic-only matches and sorts the rest by score", () => {
   const feed = buildCombinedJobsFeed({
     mode: "filtered",
     targetRole: "AI Engineer",
     internalPosts: [
-      { id: "1", title: "Software Engineer", employer_profiles: { company_name: "Co A" } },
-      { id: "2", title: "AI Engineer", employer_profiles: { company_name: "Co B" } },
-      { id: "3", title: "Machine Learning Engineer", employer_profiles: { company_name: "Co C" } },
+      { id: "1", title: "Software Engineer", employer_profiles: { company_name: "Co A" } }, // generic only -> dropped
+      { id: "2", title: "AI Engineer", employer_profiles: { company_name: "Co B" } },       // phrase match -> kept, first
+      { id: "3", title: "AI Research Engineer", employer_profiles: { company_name: "Co C" } }, // specific "ai" -> kept
+      { id: "4", title: "Machine Learning Engineer", employer_profiles: { company_name: "Co D" } }, // generic only -> dropped
     ],
     marketJobs: [],
   });
 
-  // AI Engineer should be first (phrase match)
-  assert.equal(feed[0].title, "AI Engineer");
-  assert.ok(feed.findIndex((job) => job.title === "AI Engineer") < feed.findIndex((job) => job.title === "Software Engineer"));
+  const titles = feed.map((job) => job.title);
+  assert.deepEqual(titles, ["AI Engineer", "AI Research Engineer"]);
+  assert.equal(feed[0].title, "AI Engineer"); // exact phrase ranks first
 });

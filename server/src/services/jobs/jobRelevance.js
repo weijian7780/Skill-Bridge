@@ -109,10 +109,40 @@ export function scoreRoleRelevance(job, role) {
   return score;
 }
 
-// Everything a caller must know lives here: pass a job and the searched role,
-// get a boolean. A job is relevant when it has a positive relevance score.
+// Pass a job and the searched role, get a boolean. A job is relevant when the
+// role's DISCRIMINATING (specific) words actually appear in the title. A generic
+// word alone (analyst/engineer/developer...) is NOT enough — otherwise a search
+// for "Data Analyst" keeps every "Business Analyst". Only when the role is made
+// up of generic words alone (e.g. just "Analyst") does a generic hit qualify.
 export function isRoleRelevantJob(job, role) {
-  return scoreRoleRelevance(job, role) > 0;
+  const tokens = roleTokens(role);
+  if (tokens.length === 0) {
+    return true; // Discover mode - role collapsed to no real tokens, keep everything.
+  }
+
+  const title = normalizeMatchText(job?.title || "");
+  if (!title.trim()) {
+    return false;
+  }
+
+  // Full phrase in the title is always a strong, valid match. Keep the surrounding
+  // spaces from normalizeMatchText so "data" matches " data " but not "database".
+  const rolePhrase = normalizeMatchText(role);
+  if (rolePhrase.trim() && title.includes(rolePhrase)) {
+    return true;
+  }
+
+  const titleWords = title.trim().split(" ").filter(Boolean);
+  const matchesTitle = (token) => titleWords.some((word) => wordMatchesToken(word, token));
+  const specificTokens = tokens.filter((token) => !GENERIC_ROLE_TOKENS.has(token));
+
+  if (specificTokens.length > 0) {
+    // Role has a discriminating word (data / ai / ux ...) - require at least one to hit.
+    return specificTokens.some(matchesTitle);
+  }
+
+  // Role is purely generic (e.g. "Analyst", "Manager") - a generic hit is all we have.
+  return tokens.some(matchesTitle);
 }
 
 // A title word matches a role token when they are the same word, or when one is a

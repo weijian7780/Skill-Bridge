@@ -463,7 +463,7 @@ test("extracts a Jooble result page with one Gemini request", async () => {
           },
           {
             id: "job-2",
-            title: "BI Analyst",
+            title: "Data Warehouse Analyst",
             company: "Analytics Sdn Bhd",
             location: "Malaysia",
             description: "Requires data warehousing, dashboard design, Power BI and SQL.",

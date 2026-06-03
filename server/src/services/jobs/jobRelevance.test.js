@@ -14,9 +14,23 @@ test("keeps jobs whose title contains the searched role phrase", () => {
   assert.equal(isRoleRelevantJob(job, "Data Analyst"), true);
 });
 
-test("keeps jobs that share a significant role token in the title", () => {
-  const job = { title: "Analyst, Business Reporting" };
+test("keeps jobs that share a SPECIFIC role token in the title", () => {
+  const job = { title: "Data Engineer" };
   assert.equal(isRoleRelevantJob(job, "Data Analyst"), true);
+});
+
+test("drops jobs that only share a GENERIC role token (the mismatch fix)", () => {
+  // "Business Analyst" shares only the generic word "analyst" with "Data Analyst";
+  // it does not contain the discriminating word "data", so it must be excluded.
+  assert.equal(isRoleRelevantJob({ title: "Business Analyst" }, "Data Analyst"), false);
+  assert.equal(isRoleRelevantJob({ title: "Analyst, Business Reporting" }, "Data Analyst"), false);
+  assert.equal(isRoleRelevantJob({ title: "Civil Engineer" }, "AI Engineer"), false);
+  assert.equal(isRoleRelevantJob({ title: "Software Engineer" }, "AI Engineer"), false);
+});
+
+test("keeps generic-token matches when the role is purely generic", () => {
+  // "Analyst" alone has no discriminating word, so a generic hit is all we have.
+  assert.equal(isRoleRelevantJob({ title: "Business Analyst" }, "Analyst"), true);
 });
 
 test("excludes jobs whose title shares no significant role token", () => {
@@ -134,22 +148,18 @@ test("roleTokens keeps short meaningful tokens like ai, ml, qa, ux", () => {
   assert.deepEqual(roleTokens("UX Designer"), ["ux", "designer"]);
 });
 
-test("filterJobsByRole returns jobs sorted by relevance score descending", () => {
+test("filterJobsByRole drops generic-only matches and ranks specific matches first", () => {
   const jobs = [
-    { title: "Software Engineer" },
-    { title: "AI Engineer" },
-    { title: "Machine Learning Engineer" },
-    { title: "Civil Engineer" },
+    { title: "Software Engineer" },   // generic "engineer" only -> dropped
+    { title: "AI Engineer" },         // specific "ai" + phrase -> kept, top
+    { title: "AI Research Engineer" },// specific "ai" -> kept
+    { title: "Civil Engineer" },      // generic "engineer" only -> dropped
   ];
 
-  const filtered = filterJobsByRole(jobs, "AI Engineer");
-  const titles = filtered.map((job) => job.title);
+  const titles = filterJobsByRole(jobs, "AI Engineer").map((job) => job.title);
 
-  // AI Engineer should be first (phrase match + all tokens)
+  // Only the jobs that share the discriminating word "ai" survive.
+  assert.deepEqual(titles, ["AI Engineer", "AI Research Engineer"]);
+  // Exact phrase match ranks above a partial specific match.
   assert.equal(titles[0], "AI Engineer");
-
-  // Software/Civil Engineer should rank low (only generic "engineer" token)
-  // Machine Learning Engineer should be somewhere in between (has "engineer" but also related context)
-  assert.ok(titles.indexOf("AI Engineer") < titles.indexOf("Software Engineer"));
-  assert.ok(titles.indexOf("AI Engineer") < titles.indexOf("Civil Engineer"));
 });
