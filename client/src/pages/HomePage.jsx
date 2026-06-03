@@ -4,6 +4,7 @@ import { HomeJobsFeed } from "../components/HomeJobsFeed.jsx";
 import JobDetailPanel from "../components/JobDetailPanel.jsx";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { CertificatesManager } from "../components/CertificatesManager.jsx";
 import {
   getRegionOption,
   regionOptions,
@@ -317,7 +318,8 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* CV Upload / Confirmation Card */}
+        {/* CV Upload + Certificates (side by side) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-md items-start">
         <section className="bg-surface-container border border-outline-variant rounded-xl p-md shadow-sm">
           <details className="group" open={!hasConfirmedCv || !!pendingDraft}>
             <summary className="flex cursor-pointer items-center justify-between font-headline-md text-headline-md text-on-surface list-none outline-none">
@@ -421,6 +423,9 @@ export function HomePage() {
             </div>
           </details>
         </section>
+
+        <CertificatesManager />
+        </div>
 
         {/* Split-Pane Layout (List left, Detail right) */}
         <div className="split-pane">

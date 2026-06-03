@@ -1,5 +1,4 @@
 import { NavLink } from "react-router-dom";
-import { Icon } from "./Icon.jsx";
 import { appNavigationItems } from "../services/navigation/appNavigation.js";
 
 export function AppHeader({ simple = false }) {
@@ -10,7 +9,7 @@ export function AppHeader({ simple = false }) {
       </div>
 
       {!simple && (
-        <nav className="hidden md:flex gap-8 items-center">
+        <nav className="hidden md:flex gap-8 items-center absolute left-1/2 -translate-x-1/2">
           {appNavigationItems.map((item) => (
             <NavLink
               key={item.to}
@@ -26,10 +25,6 @@ export function AppHeader({ simple = false }) {
           ))}
         </nav>
       )}
-
-      <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-95 text-on-surface-variant">
-        <Icon name="notifications" />
-      </button>
     </header>
   );
 }

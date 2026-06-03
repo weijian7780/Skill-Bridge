@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Icon } from "./Icon.jsx";
 import {
   buildCombinedJobsFeed,
@@ -10,6 +9,7 @@ import {
 } from "../services/jobs/combinedJobsFeed.js";
 import { searchMarketJobs } from "../services/jobs/jobApi.js";
 import { fetchActiveJobPosts } from "../services/jobs/internalJobPostsApi.js";
+import { useAppliedJobIds } from "../state/useAppliedJobIds.js";
 
 const DISCOVER_MARKET_ROLE = "graduate";
 
@@ -39,6 +39,7 @@ export function HomeJobsFeed({
   onSelectJob = null,
   onRefresh = null,
 }) {
+  const appliedJobIds = useAppliedJobIds();
   const [internalPosts, setInternalPosts] = useState([]);
   const [discoverMarketJobs, setDiscoverMarketJobs] = useState([]);
   const [feedMarketJobs, setFeedMarketJobs] = useState([]);
@@ -261,25 +262,11 @@ export function HomeJobsFeed({
                   </div>
 
                   <div className="flex shrink-0 flex-col items-start gap-sm md:items-end">
-                    {card.action === "apply" ? (
-                      <Link
-                        to={card.applyPath}
-                        onClick={(e) => e.stopPropagation()} // Prevents selection trigger on button press
-                        className="inline-flex items-center justify-center rounded-xl bg-primary px-xl py-sm font-label-md text-label-md font-bold text-on-primary transition-all hover:bg-secondary active:scale-[0.98]"
-                      >
-                        Apply
-                      </Link>
-                    ) : (
-                      <a
-                        href={card.url}
-                        rel="noreferrer"
-                        target="_blank"
-                        onClick={(e) => e.stopPropagation()} // Prevents selection trigger on button press
-                        className="inline-flex items-center justify-center gap-xs rounded-xl border border-primary px-xl py-sm font-label-md text-label-md text-primary transition-colors hover:bg-primary/5"
-                      >
-                        Open listing
-                        <Icon name="open_in_new" className="text-[18px]" />
-                      </a>
+                    {card.action === "apply" && appliedJobIds.has(card.id) && (
+                      <span className="inline-flex items-center gap-xs font-label-sm text-label-sm font-bold text-tertiary">
+                        <Icon name="check_circle" className="text-[16px]" />
+                        Applied
+                      </span>
                     )}
                     {card.postedAt && (
                       <span className="font-label-sm text-label-sm text-on-surface-variant">

@@ -20,12 +20,18 @@ test("home page wires the combined jobs feed anchor", () => {
   assert.match(feedSource, /id="jobs"/);
 });
 
-test("combined jobs feed component uses the exact phrases from the UI spec", () => {
+test("job actions live in the detail panel, not the feed list cards", () => {
+  // Apply / Open listing buttons belong to the detail panel; the feed list is for
+  // browsing and only marks jobs the student already applied to.
   const feedSource = readFileSync(new URL("../components/HomeJobsFeed.jsx", import.meta.url), "utf8");
-  assert.match(feedSource, /Open listing/);
-  assert.doesNotMatch(feedSource, /View job/);
-  assert.match(feedSource, /Apply/);
-  assert.doesNotMatch(feedSource, /Apply now/);
+  const detailSource = readFileSync(new URL("../components/JobDetailPanel.jsx", import.meta.url), "utf8");
+
+  assert.match(detailSource, /Open listing/);
+  assert.match(detailSource, /Apply/);
+  assert.doesNotMatch(detailSource, /Apply now/);
+
+  assert.match(feedSource, /Applied/);
+  assert.doesNotMatch(feedSource, /Open listing/);
 });
 
 test("home page contains exact UI phrases", () => {

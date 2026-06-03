@@ -13,6 +13,7 @@ import { subscriptionRouter } from "./routes/employer/subscription.js";
 import { candidatesRouter } from "./routes/employer/candidates.js";
 import { requireActiveSubscription } from "./middleware/subscription.js";
 import { applicationsRouter } from "./routes/student/applications.js";
+import { certificatesRouter } from "./routes/student/certificates.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
 
 export function createApp() {
@@ -83,6 +84,7 @@ export function createApp() {
   app.use("/api/student", requireAuth(authConfig));
   app.use("/api/student", requireRole("student"));
   app.use("/api/student/applications", applicationsRouter);
+  app.use("/api/student/certificates", certificatesRouter);
 
   app.use((error, _request, response, _next) => {
     console.error(error);

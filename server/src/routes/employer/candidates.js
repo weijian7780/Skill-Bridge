@@ -60,6 +60,42 @@ async function getApplicantStudentIds({ url, serviceRoleKey, fetchImpl }, employ
   return [...new Set(apps.map((app) => app.student_id))];
 }
 
+// A candidate's certificates, each with a short-lived signed URL for viewing.
+// Best-effort: if storage/signing fails the rest of the profile still loads.
+async function getCandidateCertificates({ url, serviceRoleKey, fetchImpl }, studentId) {
+  try {
+    const certUrl = new URL("/rest/v1/student_certificates", url);
+    certUrl.searchParams.set("user_id", `eq.${studentId}`);
+    certUrl.searchParams.set("select", "id,title,storage_path,file_name,skill_tags");
+    certUrl.searchParams.set("order", "created_at.desc");
+    const res = await fetchImpl(certUrl.toString(), { headers: serviceHeaders(serviceRoleKey) });
+    if (!res.ok) return [];
+    const rows = await res.json();
+
+    return await Promise.all(
+      rows.map(async (cert) => {
+        let viewUrl = "";
+        try {
+          const signRes = await fetchImpl(`${url}/storage/v1/object/sign/certificates/${cert.storage_path}`, {
+            method: "POST",
+            headers: serviceHeaders(serviceRoleKey),
+            body: JSON.stringify({ expiresIn: 3600 }),
+          });
+          if (signRes.ok) {
+            const signed = await signRes.json();
+            viewUrl = `${url}/storage/v1${signed.signedURL}`;
+          }
+        } catch {
+          // ignore signing failure for this certificate
+        }
+        return { id: cert.id, title: cert.title || cert.file_name, url: viewUrl, skills: cert.skill_tags ?? [] };
+      }),
+    );
+  } catch {
+    return [];
+  }
+}
+
 // GET /  ?skill=&location=  -> search the employer's OWN applicants
 candidatesRouter.get("/", async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;
@@ -133,10 +169,12 @@ candidatesRouter.get("/:id", async (request, response) => {
 
     const row = rows[0];
     const skillProfile = row.skill_profile || {};
+    const certificates = await getCandidateCertificates(request.supabase, studentId);
 
     response.json({
       ok: true,
       candidate: {
+        certificates,
         id: row.user_id,
         name: row.display_name || "Candidate",
         location: row.location || "",

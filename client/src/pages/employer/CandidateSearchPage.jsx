@@ -58,6 +58,11 @@ export function CandidateSearchPage() {
     }
   }
 
+  // Lowercased skills proven by the selected candidate's certificates.
+  const certifiedSkillKeys = new Set(
+    (selected?.certificates ?? []).flatMap((cert) => (cert.skills ?? []).map((s) => String(s).toLowerCase())),
+  );
+
   if (loading) {
     return <p className="font-body-md text-body-md text-on-surface-variant">Loading...</p>;
   }
@@ -152,9 +157,17 @@ export function CandidateSearchPage() {
 
               <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Technical skills</p>
               <div className="flex flex-wrap gap-xs mb-md">
-                {(selected.skillProfile.technicalSkills || []).map((s) => (
-                  <span key={s} className="rounded-lg bg-surface-container-high px-sm py-xs font-label-sm text-label-sm text-on-surface">{s}</span>
-                ))}
+                {(selected.skillProfile.technicalSkills || []).map((s) => {
+                  const certified = certifiedSkillKeys.has(String(s).toLowerCase());
+                  return (
+                    <span
+                      key={s}
+                      className={`rounded-lg px-sm py-xs font-label-sm text-label-sm ${certified ? "bg-tertiary-container text-on-tertiary-container inline-flex items-center gap-xs" : "bg-surface-container-high text-on-surface"}`}
+                    >
+                      {certified && <Icon name="verified" className="text-[14px]" />}{s}
+                    </span>
+                  );
+                })}
               </div>
 
               {(selected.skillProfile.softSkills || []).length > 0 && (
@@ -165,6 +178,26 @@ export function CandidateSearchPage() {
                       <span key={s} className="rounded-lg bg-surface-container-high px-sm py-xs font-label-sm text-label-sm text-on-surface-variant">{s}</span>
                     ))}
                   </div>
+                </>
+              )}
+
+              {(selected.certificates || []).length > 0 && (
+                <>
+                  <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Certificates (candidate-provided)</p>
+                  <ul className="space-y-xs mb-md">
+                    {selected.certificates.map((cert) => (
+                      <li key={cert.id} className="flex items-center gap-xs">
+                        <Icon name="verified" className="text-primary text-[16px]" />
+                        {cert.url ? (
+                          <a href={cert.url} target="_blank" rel="noopener noreferrer" className="font-body-sm text-body-sm text-primary underline">
+                            {cert.title}
+                          </a>
+                        ) : (
+                          <span className="font-body-sm text-body-sm text-on-surface">{cert.title}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </>
               )}
 
