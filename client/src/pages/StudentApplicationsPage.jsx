@@ -34,6 +34,15 @@ export function StudentApplicationsPage() {
     fetchApps();
   }, [session]);
 
+  const STATUS_MESSAGES = {
+    pending: "Your application has been submitted and is awaiting review.",
+    reviewed: "The employer has reviewed your application.",
+    shortlisted: "Good news — you've been shortlisted for this role.",
+    interview: "You've been invited to an interview. See the details below.",
+    hired: "🎉 Congratulations! You've been selected for this role.",
+    rejected: "Unfortunately, you were not selected for this role this time.",
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "pending": return "bg-orange-500/20 text-orange-700 border-orange-500/30";
@@ -161,6 +170,12 @@ export function StudentApplicationsPage() {
 
                   {expandedId === app.id && (
                     <div className="mt-md pt-md border-t border-outline-variant space-y-md">
+                      <div className={`rounded-lg border px-sm py-sm ${getStatusColor(app.status)}`}>
+                        <p className="font-body-sm text-body-sm">
+                          {STATUS_MESSAGES[app.status] || "Your application status has been updated."}
+                        </p>
+                      </div>
+
                       <div>
                         <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Cover letter</p>
                         {app.cover_letter ? (
@@ -169,6 +184,37 @@ export function StudentApplicationsPage() {
                           <p className="font-body-sm text-body-sm text-on-surface-variant italic">No cover letter submitted.</p>
                         )}
                       </div>
+
+                      {Array.isArray(app.interviews) && app.interviews.length > 0 && (
+                        <div>
+                          <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Interview</p>
+                          {app.interviews
+                            .slice()
+                            .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+                            .map((interview) => (
+                              <div key={interview.id} className="rounded-lg border border-primary/20 bg-primary/5 p-sm mb-xs">
+                                <div className="flex items-center justify-between gap-sm">
+                                  <p className="font-label-md text-label-md text-on-surface flex items-center gap-xs">
+                                    <Icon name="event" className="text-primary text-[18px]" />
+                                    {new Date(interview.scheduled_at).toLocaleString()} ({interview.duration_minutes} mins)
+                                  </p>
+                                  <span className="px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-700 font-label-sm uppercase tracking-wide text-[11px]">
+                                    {interview.status}
+                                  </span>
+                                </div>
+                                <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+                                  <Icon name="location_on" className="text-[15px] align-middle" /> {interview.location || "No location set"}
+                                </p>
+                                {interview.meeting_link && (
+                                  <a href={interview.meeting_link} target="_blank" rel="noreferrer"
+                                    className="mt-xs inline-flex items-center gap-xs rounded-lg bg-primary px-3 py-1 font-label-sm text-label-sm text-on-primary hover:bg-secondary">
+                                    <Icon name="videocam" className="text-[16px]" /> Join meeting
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
 
                       <div>
                         <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Submitted documents</p>

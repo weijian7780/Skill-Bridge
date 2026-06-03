@@ -53,7 +53,7 @@ applicationsRouter.get("/", async (request, response) => {
   try {
     const fetchUrl = new URL("/rest/v1/applications", url);
     fetchUrl.searchParams.set("student_id", `eq.${studentId}`);
-    fetchUrl.searchParams.set("select", "*,job_posts(*)");
+    fetchUrl.searchParams.set("select", "*,job_posts(*),interviews(*)");
     fetchUrl.searchParams.set("order", "applied_at.desc");
 
     const supabaseResponse = await fetchImpl(fetchUrl.toString(), {
