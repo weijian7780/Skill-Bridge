@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { sendApplicationRejectedEmail } from "../../services/emailService.js";
 
 export const employerApplicationsRouter = Router();
 
@@ -264,7 +265,63 @@ employerApplicationsRouter.patch("/:id/status", async (request, response) => {
 
     if (!updateRes.ok) throw new Error("Failed to update status");
     const updated = await updateRes.json();
-    
+
+    // Notify the candidate when their application is rejected (best-effort).
+    if (status === "rejected") {
+      // Cancel any scheduled interviews so a rejected candidate has no live interview.
+      try {
+        const cancelUrl = new URL("/rest/v1/interviews", url);
+        cancelUrl.searchParams.set("application_id", `eq.${applicationId}`);
+        await fetchImpl(cancelUrl.toString(), {
+          method: "PATCH",
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "cancelled" }),
+        });
+      } catch (cancelErr) {
+        console.error("Non-fatal: failed to cancel interviews on reject", cancelErr);
+      }
+
+      try {
+        const svcHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` };
+
+        const infoUrl = new URL("/rest/v1/applications", url);
+        infoUrl.searchParams.set("id", `eq.${applicationId}`);
+        infoUrl.searchParams.set("select", "student_id,job_posts(title)");
+        const infoRes = await fetchImpl(infoUrl.toString(), { headers: svcHeaders });
+        const info = await infoRes.json();
+
+        if (Array.isArray(info) && info.length > 0) {
+          const jobTitle = info[0].job_posts?.title || "the role";
+
+          // Company name: fetched separately (no FK between job_posts and employer_profiles).
+          let companyName = "the company";
+          const profUrl = new URL("/rest/v1/employer_profiles", url);
+          profUrl.searchParams.set("user_id", `eq.${employerId}`);
+          profUrl.searchParams.set("select", "company_name");
+          const profRes = await fetchImpl(profUrl.toString(), { headers: svcHeaders });
+          if (profRes.ok) {
+            const prof = await profRes.json();
+            companyName = prof[0]?.company_name || companyName;
+          }
+
+          // The student's email lives in auth.users, not the applications table.
+          const authRes = await fetchImpl(`${url}/auth/v1/admin/users/${info[0].student_id}`, { headers: svcHeaders });
+          if (authRes.ok) {
+            const user = await authRes.json();
+            if (user.email) {
+              await sendApplicationRejectedEmail(user.email, jobTitle, companyName);
+            }
+          }
+        }
+      } catch (emailErr) {
+        console.error("Non-fatal: failed to send rejection email", emailErr);
+      }
+    }
+
     response.json({ ok: true, application: updated[0] });
   } catch (error) {
     console.error("Failed to update application status:", error);

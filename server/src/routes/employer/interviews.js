@@ -71,25 +71,41 @@ employerInterviewsRouter.post("/", async (request, response) => {
       body: JSON.stringify({ status: "interview" }),
     });
 
-    // 4. Send email to student
+    // 4. Send email to student (best-effort)
     try {
-      // Get student email and company info
+      const svcHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` };
+
+      // Job title via the applications -> job_posts FK (this embed is valid).
       const studentUrl = new URL("/rest/v1/applications", url);
       studentUrl.searchParams.set("id", `eq.${application_id}`);
-      studentUrl.searchParams.set("select", "student_email,job_posts(title,employer_profiles(company_name))");
-      const stRes = await fetchImpl(studentUrl.toString(), {
-        headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` }
-      });
+      studentUrl.searchParams.set("select", "student_id,job_posts(title)");
+      const stRes = await fetchImpl(studentUrl.toString(), { headers: svcHeaders });
       const stData = await stRes.json();
-      
-      if (stData.length > 0) {
-        const studentEmail = stData[0].student_email;
-        const jobTitle = stData[0].job_posts?.title || "Unknown Job";
-        const companyName = stData[0].job_posts?.employer_profiles?.company_name || "Unknown Company";
-        
-        await sendInterviewInvitation(studentEmail, jobTitle, companyName, {
-          scheduled_at, duration_minutes, location, meeting_link
-        });
+
+      if (Array.isArray(stData) && stData.length > 0) {
+        const jobTitle = stData[0].job_posts?.title || "the role";
+
+        // Company name: fetched separately (no FK between job_posts and employer_profiles).
+        let companyName = "the company";
+        const profUrl = new URL("/rest/v1/employer_profiles", url);
+        profUrl.searchParams.set("user_id", `eq.${employerId}`);
+        profUrl.searchParams.set("select", "company_name");
+        const profRes = await fetchImpl(profUrl.toString(), { headers: svcHeaders });
+        if (profRes.ok) {
+          const prof = await profRes.json();
+          companyName = prof[0]?.company_name || companyName;
+        }
+
+        // Student email lives in auth.users, not applications.
+        const authRes = await fetchImpl(`${url}/auth/v1/admin/users/${stData[0].student_id}`, { headers: svcHeaders });
+        if (authRes.ok) {
+          const user = await authRes.json();
+          if (user.email) {
+            await sendInterviewInvitation(user.email, jobTitle, companyName, {
+              scheduled_at, duration_minutes, location, meeting_link
+            });
+          }
+        }
       }
     } catch (emailErr) {
       console.error("Non-fatal: Failed to trigger email", emailErr);
@@ -131,7 +147,39 @@ async function verifyInterviewOwnership({ url, serviceRoleKey, fetchImpl }, inte
   const jobs = await jobRes.json();
   if (!jobs.length) return { ok: false, status: 403, error: "Access denied" };
 
-  return { ok: true };
+  return { ok: true, applicationId: ivs[0].application_id };
+}
+
+// Look up the candidate's email + job/company for an application, then email them.
+async function emailCandidateAboutInterview({ url, serviceRoleKey, fetchImpl }, { applicationId, employerId, scheduleData, rescheduled }) {
+  const svcHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` };
+
+  const appUrl = new URL("/rest/v1/applications", url);
+  appUrl.searchParams.set("id", `eq.${applicationId}`);
+  appUrl.searchParams.set("select", "student_id,job_posts(title)");
+  const appRes = await fetchImpl(appUrl.toString(), { headers: svcHeaders });
+  const apps = await appRes.json();
+  if (!Array.isArray(apps) || !apps.length) return;
+
+  const jobTitle = apps[0].job_posts?.title || "the role";
+
+  let companyName = "the company";
+  const profUrl = new URL("/rest/v1/employer_profiles", url);
+  profUrl.searchParams.set("user_id", `eq.${employerId}`);
+  profUrl.searchParams.set("select", "company_name");
+  const profRes = await fetchImpl(profUrl.toString(), { headers: svcHeaders });
+  if (profRes.ok) {
+    const prof = await profRes.json();
+    companyName = prof[0]?.company_name || companyName;
+  }
+
+  const authRes = await fetchImpl(`${url}/auth/v1/admin/users/${apps[0].student_id}`, { headers: svcHeaders });
+  if (authRes.ok) {
+    const user = await authRes.json();
+    if (user.email) {
+      await sendInterviewInvitation(user.email, jobTitle, companyName, scheduleData, { rescheduled });
+    }
+  }
 }
 
 // PATCH /api/employer/interviews/:id  -> edit a scheduled interview
@@ -165,6 +213,25 @@ employerInterviewsRouter.patch("/:id", async (request, response) => {
 
     if (!updateRes.ok) throw new Error("Failed to update interview");
     const updated = await updateRes.json();
+
+    // Notify the candidate that their interview was rescheduled (best-effort).
+    try {
+      const iv = updated[0];
+      await emailCandidateAboutInterview(request.supabase, {
+        applicationId: owns.applicationId,
+        employerId,
+        scheduleData: {
+          scheduled_at: iv.scheduled_at,
+          duration_minutes: iv.duration_minutes,
+          location: iv.location,
+          meeting_link: iv.meeting_link,
+        },
+        rescheduled: true,
+      });
+    } catch (emailErr) {
+      console.error("Non-fatal: failed to send reschedule email", emailErr);
+    }
+
     response.json({ ok: true, interview: updated[0] });
   } catch (error) {
     console.error("Failed to update interview:", error);

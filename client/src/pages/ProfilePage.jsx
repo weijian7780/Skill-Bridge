@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
 import { ConfirmModal } from "../components/ConfirmModal.jsx";
+import { buildReadinessRadar } from "../services/analysis/readinessRadar.js";
 import { useAppState } from "../state/AppStateContext.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
@@ -29,14 +30,8 @@ export function ProfilePage() {
     : 0;
   const roadmapStatus = roadmap.length > 0 ? `${roadmap.length} Items` : "Pending";
 
-  // Prepare radar chart data
-  const radarData = [
-    { subject: 'Technical', A: Math.min(100, analysis.readinessScore + 10), fullMark: 100 },
-    { subject: 'Soft Skills', A: Math.min(100, analysis.readinessScore + 20), fullMark: 100 },
-    { subject: 'Education', A: Math.min(100, analysis.readinessScore + 5), fullMark: 100 },
-    { subject: 'Tools', A: Math.min(100, analysis.readinessScore - 5), fullMark: 100 },
-    { subject: 'Market Match', A: analysis.readinessScore, fullMark: 100 },
-  ];
+  // Real per-category readiness (no cosmetic offsets) — see readinessRadar.js
+  const radarData = buildReadinessRadar({ analysis, skillProfile });
 
   async function handleSignOut() {
     await logout();

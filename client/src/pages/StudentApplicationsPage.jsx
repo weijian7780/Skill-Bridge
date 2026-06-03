@@ -185,7 +185,7 @@ export function StudentApplicationsPage() {
                         )}
                       </div>
 
-                      {Array.isArray(app.interviews) && app.interviews.length > 0 && (
+                      {app.status !== "rejected" && Array.isArray(app.interviews) && app.interviews.length > 0 && (
                         <div>
                           <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">Interview</p>
                           {app.interviews

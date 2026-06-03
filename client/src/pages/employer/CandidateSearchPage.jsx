@@ -72,7 +72,7 @@ export function CandidateSearchPage() {
         Find Candidates
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant mb-lg">
-        Search discoverable students by skill and preferred work location.
+        Search candidates who applied to your jobs by skill and location.
       </p>
 
       <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-sm mb-lg">
