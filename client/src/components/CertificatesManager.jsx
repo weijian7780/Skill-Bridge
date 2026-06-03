@@ -20,6 +20,7 @@ export function CertificatesManager() {
 
   const [certificates, setCertificates] = useState([]);
   const [status, setStatus] = useState("");
+  const [statusIsWarning, setStatusIsWarning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   // { closesGaps:[], otherSkills:[], selected:Set, title } shown after an upload that detected skills.
@@ -42,6 +43,7 @@ export function CertificatesManager() {
 
     setBusy(true);
     setPendingMatch(null);
+    setStatusIsWarning(false);
     setStatus(`Uploading ${files.length} file(s)...`);
     try {
       let lastTags = [];
@@ -64,9 +66,16 @@ export function CertificatesManager() {
         setOpen(true);
         setStatus("Uploaded. We detected skills on this certificate — review below.");
       } else {
-        setStatus("Certificate(s) uploaded.");
+        // Stored fine, but the AI couldn't read any skills off it (e.g. low-quality
+        // scan, image-only PDF, or the file isn't really a certificate).
+        setOpen(true);
+        setStatusIsWarning(true);
+        setStatus(
+          "Uploaded, but we couldn't detect any skills on this certificate. Try a clearer PDF or image, or add the skills to your profile manually.",
+        );
       }
     } catch (error) {
+      setStatusIsWarning(true);
       setStatus(error.message);
     } finally {
       setBusy(false);
@@ -93,6 +102,7 @@ export function CertificatesManager() {
       });
     }
     setPendingMatch(null);
+    setStatusIsWarning(false);
     setStatus(chosen.length > 0 ? "Skills added to your profile — your gaps will update." : "No skills added.");
   }
 
@@ -101,6 +111,7 @@ export function CertificatesManager() {
       const res = await getCertificateUrl(token, id);
       window.open(res.url, "_blank", "noopener,noreferrer");
     } catch (error) {
+      setStatusIsWarning(true);
       setStatus(error.message);
     }
   }
@@ -110,6 +121,7 @@ export function CertificatesManager() {
       await deleteCertificate(token, id);
       setCertificates((current) => current.filter((cert) => cert.id !== id));
     } catch (error) {
+      setStatusIsWarning(true);
       setStatus(error.message);
     }
   }
@@ -217,7 +229,16 @@ export function CertificatesManager() {
         </ul>
       )}
 
-          {status && <p className="font-body-sm text-body-sm text-on-surface-variant mt-sm">{status}</p>}
+          {status && (
+            statusIsWarning ? (
+              <div className="mt-sm flex items-start gap-xs rounded-lg border border-tertiary/40 bg-tertiary-container/30 p-sm font-body-sm text-body-sm text-on-surface">
+                <Icon name="warning" className="text-tertiary text-[18px] shrink-0" />
+                <span>{status}</span>
+              </div>
+            ) : (
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-sm">{status}</p>
+            )
+          )}
         </div>
       </details>
     </section>
