@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 import { useAppState } from "../state/AppStateContext.jsx";
+import { useToast } from "../state/ToastContext.jsx";
 import { matchCertSkillsToGaps } from "../services/analysis/certificateSkillMatch.js";
 import {
   deleteCertificate,
@@ -16,6 +17,7 @@ export function CertificatesManager() {
   const { session } = useAuth();
   const token = session?.accessToken;
   const { analysis, skillProfile, setSkillProfile } = useAppState();
+  const { showToast } = useToast();
   const missingSkills = analysis?.missingSkills ?? [];
 
   const [certificates, setCertificates] = useState([]);
@@ -104,6 +106,9 @@ export function CertificatesManager() {
     setPendingMatch(null);
     setStatusIsWarning(false);
     setStatus(chosen.length > 0 ? "Skills added to your profile — your gaps will update." : "No skills added.");
+    if (chosen.length > 0) {
+      showToast(`Added ${chosen.length} skill${chosen.length > 1 ? "s" : ""} to your profile.`);
+    }
   }
 
   async function handleView(id) {

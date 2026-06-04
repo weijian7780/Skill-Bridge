@@ -4,15 +4,18 @@ import { PageShell } from "../components/PageShell.jsx";
 import { Icon } from "../components/Icon.jsx";
 import JobDetailPanel from "../components/JobDetailPanel.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
+import { useToast } from "../state/ToastContext.jsx";
 import { fetchSavedJobs, saveJob, unsaveJob, isJobSaved } from "../services/jobs/savedJobsApi.js";
 
 export function SavedJobsPage() {
   const { session, supabaseConnection, config } = useAuth();
+  const { showToast } = useToast();
 
   const [savedJobs, setSavedJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -44,6 +47,7 @@ export function SavedJobsPage() {
       if (alreadySaved) {
         await unsaveJob({ config, accessToken: session.accessToken, jobId: jobCard.id, jobSource: jobCard.source });
         setSavedJobs((current) => current.filter((x) => !(x.job_id === jobCard.id && x.job_source === jobCard.source)));
+        showToast("Removed from saved jobs.", "info");
       } else {
         const newSaved = await saveJob({
           config,
@@ -54,13 +58,24 @@ export function SavedJobsPage() {
           jobData: jobCard,
         });
         setSavedJobs((current) => [newSaved, ...current]);
+        showToast("Job saved.");
       }
     } catch (err) {
       console.error("Failed to toggle save job:", err);
+      showToast("Couldn't update saved jobs. Please try again.", "error");
     }
   };
 
-  const cards = savedJobs.map((saved) => saved.job_data).filter(Boolean);
+  const allCards = savedJobs.map((saved) => saved.job_data).filter(Boolean);
+  const needle = query.trim().toLowerCase();
+  const cards = needle
+    ? allCards.filter((card) =>
+        [card.title, card.company, card.location, ...(card.skills ?? [])]
+          .join(" ")
+          .toLowerCase()
+          .includes(needle),
+      )
+    : allCards;
 
   return (
     <PageShell>
@@ -75,6 +90,28 @@ export function SavedJobsPage() {
           </p>
         </div>
 
+        {!isLoading && !error && allCards.length > 0 && (
+          <label className="relative block">
+            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search saved jobs by title, company, or skill"
+              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest pl-10 pr-3 py-sm text-on-surface focus:border-primary focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
+              >
+                <Icon name="close" className="text-[18px]" />
+              </button>
+            )}
+          </label>
+        )}
+
         {isLoading ? (
           <div className="py-lg text-center font-body-md text-on-surface-variant flex flex-col items-center gap-sm">
             <Icon name="sync" className="animate-spin text-primary text-[32px]" />
@@ -82,13 +119,20 @@ export function SavedJobsPage() {
           </div>
         ) : error ? (
           <p className="py-lg text-center font-body-md text-error">{error}</p>
-        ) : cards.length === 0 ? (
+        ) : allCards.length === 0 ? (
           <div className="rounded-xl border border-outline-variant bg-surface-container-low p-lg text-center">
             <Icon name="bookmark_border" className="text-[40px] text-on-surface-variant" />
             <p className="mt-sm font-body-md text-body-md text-on-surface-variant">
               No saved jobs yet. Open a job from{" "}
               <Link to="/home" className="text-primary underline">Home</Link>{" "}
               and tap the heart to save it here.
+            </p>
+          </div>
+        ) : cards.length === 0 ? (
+          <div className="rounded-xl border border-outline-variant bg-surface-container-low p-lg text-center">
+            <Icon name="search_off" className="text-[40px] text-on-surface-variant" />
+            <p className="mt-sm font-body-md text-body-md text-on-surface-variant">
+              No saved jobs match “{query}”.
             </p>
           </div>
         ) : (

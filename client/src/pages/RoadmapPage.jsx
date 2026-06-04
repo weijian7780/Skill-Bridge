@@ -17,11 +17,24 @@ export function RoadmapPage() {
   const { savedRoadmaps, savedRoadmapStatus, saveCurrentRoadmap, removeSavedRoadmap } = useSavedRoadmaps();
   const [selectedSavedId, setSelectedSavedId] = useState(null);
   const [saveBusy, setSaveBusy] = useState(false);
+  // Local "done" tracking for roadmap steps (resets on reload).
+  const [completedSteps, setCompletedSteps] = useState(() => new Set());
 
   const selectedSaved = savedRoadmaps.find((roadmap) => roadmap.id === selectedSavedId) || null;
   const currentView = buildRoadmapPageView({ careerTarget, analysis, roadmapPlan });
   const view = selectedSaved ? buildSavedRoadmapView(selectedSaved) : currentView;
   const canSaveCurrent = !selectedSaved && currentView.isGenerated && !currentView.hasNoGaps;
+
+  const stepKeyOf = (item) => `${item.stepLabel}-${item.title}`;
+  const toggleStep = (key) =>
+    setCompletedSteps((current) => {
+      const next = new Set(current);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  const totalSteps = view.pathItems.length;
+  const doneSteps = view.pathItems.filter((item) => completedSteps.has(stepKeyOf(item))).length;
+  const progressPct = totalSteps > 0 ? Math.round((doneSteps / totalSteps) * 100) : 0;
 
   async function handleSaveCurrent() {
     setSaveBusy(true);
@@ -144,6 +157,29 @@ export function RoadmapPage() {
               ))}
             </section>
 
+            {!view.hasNoGaps && totalSteps > 0 && (
+              <section className="mb-gutter bg-surface-container border border-outline-variant rounded-xl p-md">
+                <div className="flex items-center justify-between mb-sm">
+                  <div className="flex items-center gap-sm">
+                    <Icon name={progressPct === 100 ? "celebration" : "trending_up"} className="text-primary" filled={progressPct === 100} />
+                    <h3 className="font-headline-md text-headline-md text-on-surface">
+                      {progressPct === 100 ? "Roadmap complete! 🎉" : "Your progress"}
+                    </h3>
+                  </div>
+                  <span className="font-headline-md text-headline-md text-primary">{progressPct}%</span>
+                </div>
+                <div className="w-full bg-surface-container-highest h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">
+                  {doneSteps} of {totalSteps} steps marked done
+                </p>
+              </section>
+            )}
+
             {view.hasNoGaps ? (
               <section className="bg-surface-container border border-primary/20 rounded-xl p-lg mb-gutter">
                 <div className="flex items-start gap-sm">
@@ -161,12 +197,28 @@ export function RoadmapPage() {
                 <div className="hidden md:block absolute left-1/2 -translate-x-1/2 h-full w-[2px] timeline-line top-4" />
                 {view.pathItems.map((item, index) => {
                   const left = index % 2 === 0;
+                  const stepKey = stepKeyOf(item);
+                  const done = completedSteps.has(stepKey);
                   const card = (
                     <div className={`${left ? "md:text-right" : ""} mb-12`}>
-                      <article className={`${item.isActive ? "bg-surface-container" : "bg-surface-container-low"} p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors relative`}>
-                        <div className={`inline-flex items-center gap-2 px-3 py-1 ${item.isActive ? "bg-primary-container/10 text-primary border-primary/20" : "bg-secondary-container/20 text-on-secondary-container border-outline-variant"} border rounded-full mb-4`}>
-                          <Icon name={item.statusIcon} filled={item.isActive} className="text-[16px]" />
-                          <span className="font-label-sm text-label-sm">{item.statusLabel}</span>
+                      <article className={`${done ? "border-primary/60 bg-primary/5" : item.isActive ? "bg-surface-container border-outline-variant" : "bg-surface-container-low border-outline-variant"} p-6 rounded-xl border hover:border-primary transition-colors relative`}>
+                        <div className={`flex items-center gap-sm mb-4 ${left ? "md:flex-row-reverse" : ""}`}>
+                          <div className={`inline-flex items-center gap-2 px-3 py-1 ${item.isActive ? "bg-primary-container/10 text-primary border-primary/20" : "bg-secondary-container/20 text-on-secondary-container border-outline-variant"} border rounded-full`}>
+                            <Icon name={item.statusIcon} filled={item.isActive} className="text-[16px]" />
+                            <span className="font-label-sm text-label-sm">{item.statusLabel}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleStep(stepKey)}
+                            className={`inline-flex items-center gap-xs rounded-full border px-3 py-1 font-label-sm text-label-sm transition-colors active:scale-95 ${
+                              done
+                                ? "border-primary bg-primary text-on-primary"
+                                : "border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary"
+                            }`}
+                          >
+                            <Icon name={done ? "check_circle" : "radio_button_unchecked"} filled={done} className="text-[16px]" />
+                            {done ? "Done" : "Mark done"}
+                          </button>
                         </div>
 
                         <p className="font-label-sm text-label-sm text-primary uppercase tracking-wider mb-xs">

@@ -334,8 +334,13 @@ test("builds portfolio-project roadmap content with real resource links", () => 
     label: "Microsoft Learn Power BI",
     url: "https://learn.microsoft.com/power-bi/",
   });
-  assert.match(roadmap.items[1].resources[0].url, /^https:\/\/www\.google\.com\/search\?q=/);
+  // Uncatalogued skills fall back to real learning platforms (not raw Google),
+  // and the search uses the skill only — no role/job-title noise.
+  assert.match(roadmap.items[1].resources[0].url, /^https:\/\/www\.youtube\.com\/results\?/);
   assert.match(roadmap.items[1].resources[0].label, /Uncommon Skill/);
+  assert.match(roadmap.items[1].resources[1].url, /^https:\/\/www\.coursera\.org\/search\?/);
+  // The job/role must not leak into the query.
+  assert.doesNotMatch(roadmap.items[1].resources[0].url, /Data\+?Analyst/i);
 });
 
 test("does not call the roadmap AI when no missing skills exist", async () => {

@@ -4,11 +4,13 @@ import { Icon } from "../components/Icon.jsx";
 import { PageShell } from "../components/PageShell.jsx";
 import { applyForJob, uploadResume } from "../services/student/applicationApi.js";
 import { useAuth } from "../state/AuthContext.jsx";
+import { useToast } from "../state/ToastContext.jsx";
 
 export function JobApplyPage() {
   const { id: jobId } = useParams();
   const navigate = useNavigate();
   const { session, supabaseConnection } = useAuth();
+  const { showToast } = useToast();
   
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,9 +77,11 @@ export function JobApplyPage() {
       }
 
       // Success!
+      showToast("Application submitted! Track it under Applications.");
       navigate("/home");
     } catch (err) {
       setError(err.message || "Failed to submit application");
+      showToast(err.message || "Failed to submit application", "error");
       setIsSubmitting(false);
     }
   }

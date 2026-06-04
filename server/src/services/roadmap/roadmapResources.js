@@ -83,30 +83,41 @@ const resourceCatalog = {
   ],
 };
 
-export function resourcesForSkill(skill, role = "") {
+export function resourcesForSkill(skill) {
   const curated = resourceCatalog[normalizeSkill(skill)];
   if (curated) {
     return curated;
   }
 
-  const query = new URLSearchParams({
-    q: `${skill} ${role} beginner project`.trim(),
-  });
+  // No curated course for this skill — point to real learning platforms instead
+  // of raw Google. We search on the SKILL only (the role/job title is left out so
+  // noise like a company name never pollutes the query).
+  const term = String(skill || "").trim();
+  if (!term) {
+    return [];
+  }
+
+  const youtube = new URLSearchParams({ search_query: `${term} tutorial for beginners` });
+  const coursera = new URLSearchParams({ query: term });
 
   return [
     {
-      label: `${skill} beginner project search`,
-      url: `https://www.google.com/search?${query.toString()}`,
+      label: `${term} tutorials (YouTube)`,
+      url: `https://www.youtube.com/results?${youtube.toString()}`,
+    },
+    {
+      label: `${term} courses (Coursera)`,
+      url: `https://www.coursera.org/search?${coursera.toString()}`,
     },
   ];
 }
 
-export function addResourcesToRoadmapItems(items = [], careerTarget = {}) {
+export function addResourcesToRoadmapItems(items = []) {
   return items.map((item) => ({
     ...item,
     resources: normalizeResources(item.resources).length > 0
       ? normalizeResources(item.resources)
-      : resourcesForSkill(item.skill || item.title || "career skill", careerTarget.role),
+      : resourcesForSkill(item.skill || item.title || "career skill"),
   }));
 }
 

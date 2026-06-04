@@ -32,6 +32,7 @@ import {
   isJobSaved,
 } from "../services/jobs/savedJobsApi.js";
 import { useAppState } from "../state/AppStateContext.jsx";
+import { useToast } from "../state/ToastContext.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 
 function formatBytes(bytes = 0) {
@@ -59,6 +60,7 @@ function hasConfirmedProfile(skillProfile) {
 export function HomePage() {
   const navigate = useNavigate();
   const { session, supabaseConnection, config } = useAuth();
+  const { showToast } = useToast();
   const {
     careerTarget,
     cvDocument,
@@ -218,7 +220,7 @@ export function HomePage() {
   // Handle saving and unsaving jobs using savedJobsApi
   const handleToggleSaveJob = async (jobCard) => {
     if (!session?.accessToken) {
-      alert("Please sign in to save jobs.");
+      showToast("Please sign in to save jobs.", "error");
       return;
     }
 
@@ -234,6 +236,7 @@ export function HomePage() {
         setSavedJobs((current) =>
           current.filter((x) => !(x.job_id === jobCard.id && x.job_source === jobCard.source))
         );
+        showToast("Removed from saved jobs.", "info");
       } else {
         const newSaved = await saveJob({
           config,
@@ -244,9 +247,11 @@ export function HomePage() {
           jobData: jobCard,
         });
         setSavedJobs((current) => [newSaved, ...current]);
+        showToast("Job saved! Find it under the bookmark icon.");
       }
     } catch (err) {
       console.error("Failed to toggle save job:", err);
+      showToast("Couldn't update saved jobs. Please try again.", "error");
     }
   };
 

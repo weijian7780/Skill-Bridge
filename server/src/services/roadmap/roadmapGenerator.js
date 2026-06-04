@@ -27,7 +27,7 @@ export async function generateRoadmap({ careerTarget, skillProfile, analysis }) 
     if (alignedGeminiRoadmap) {
       return {
         ...alignedGeminiRoadmap,
-        items: addResourcesToRoadmapItems(alignedGeminiRoadmap.items, careerTarget),
+        items: addResourcesToRoadmapItems(alignedGeminiRoadmap.items),
         source: alignedGeminiRoadmap.source || "gemini",
       };
     }
