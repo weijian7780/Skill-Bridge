@@ -53,6 +53,29 @@ We wish you all the best in your career journey.
   });
 }
 
+export async function sendApplicationHiredEmail(studentEmail, jobTitle, companyName) {
+  await deliverEmail({
+    to: studentEmail,
+    subject: `Congratulations! You've been hired: ${jobTitle} at ${companyName}`,
+    text: `Hello,
+
+Great news! We're delighted to let you know that ${companyName} has decided to hire you for the position of ${jobTitle}, which you applied for through SkillBridge.
+
+The employer will be in touch shortly with the next steps regarding your offer and onboarding. In the meantime, feel free to reply to any direct communication from the company.
+
+Congratulations once again on this achievement — your hard work paid off!
+- The SkillBridge Team`,
+    html: `
+      <h2>Congratulations — You've Been Hired!</h2>
+      <p>Hello,</p>
+      <p>Great news! We're delighted to let you know that <strong>${companyName}</strong> has decided to hire you for the position of <strong>${jobTitle}</strong>, which you applied for through SkillBridge.</p>
+      <p>The employer will be in touch shortly with the next steps regarding your offer and onboarding. In the meantime, feel free to reply to any direct communication from the company.</p>
+      <p>Congratulations once again on this achievement — your hard work paid off!</p>
+      <p>- The SkillBridge Team</p>
+    `,
+  });
+}
+
 export async function sendInterviewInvitation(studentEmail, jobTitle, companyName, scheduleData, { rescheduled = false } = {}) {
   const { scheduled_at, duration_minutes, location, meeting_link } = scheduleData;
   const heading = rescheduled ? "Interview Rescheduled" : "Interview Invitation";

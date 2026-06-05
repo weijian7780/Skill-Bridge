@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sendApplicationRejectedEmail } from "../../services/emailService.js";
+import { sendApplicationRejectedEmail, sendApplicationHiredEmail } from "../../services/emailService.js";
 
 export const employerApplicationsRouter = Router();
 
@@ -319,6 +319,45 @@ employerApplicationsRouter.patch("/:id/status", async (request, response) => {
         }
       } catch (emailErr) {
         console.error("Non-fatal: failed to send rejection email", emailErr);
+      }
+    }
+
+    // Notify the candidate when they are hired (best-effort).
+    if (status === "hired") {
+      try {
+        const svcHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` };
+
+        const infoUrl = new URL("/rest/v1/applications", url);
+        infoUrl.searchParams.set("id", `eq.${applicationId}`);
+        infoUrl.searchParams.set("select", "student_id,job_posts(title)");
+        const infoRes = await fetchImpl(infoUrl.toString(), { headers: svcHeaders });
+        const info = await infoRes.json();
+
+        if (Array.isArray(info) && info.length > 0) {
+          const jobTitle = info[0].job_posts?.title || "the role";
+
+          // Company name: fetched separately (no FK between job_posts and employer_profiles).
+          let companyName = "the company";
+          const profUrl = new URL("/rest/v1/employer_profiles", url);
+          profUrl.searchParams.set("user_id", `eq.${employerId}`);
+          profUrl.searchParams.set("select", "company_name");
+          const profRes = await fetchImpl(profUrl.toString(), { headers: svcHeaders });
+          if (profRes.ok) {
+            const prof = await profRes.json();
+            companyName = prof[0]?.company_name || companyName;
+          }
+
+          // The student's email lives in auth.users, not the applications table.
+          const authRes = await fetchImpl(`${url}/auth/v1/admin/users/${info[0].student_id}`, { headers: svcHeaders });
+          if (authRes.ok) {
+            const user = await authRes.json();
+            if (user.email) {
+              await sendApplicationHiredEmail(user.email, jobTitle, companyName);
+            }
+          }
+        }
+      } catch (emailErr) {
+        console.error("Non-fatal: failed to send hired email", emailErr);
       }
     }
 
