@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Icon } from "../components/Icon.jsx";
+import { AuthMarketingPanel } from "../components/AuthMarketingPanel.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
 
 function roleRedirectPath(session) {
@@ -47,30 +47,7 @@ export function LoginPage() {
         </div>
 
         <div className="max-w-[1280px] w-full grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center relative z-10">
-          <section className="lg:col-span-7 flex flex-col space-y-md">
-            <div className="flex items-center -ml-2 mb-base">
-              <img src="/skillbridge-logo.png" alt="SkillBridge" className="h-40 md:h-56 w-auto max-w-full object-contain" />
-            </div>
-            <h2 className="font-headline-lg text-headline-lg text-on-background max-w-xl">
-              Bridge your skills to your future career
-            </h2>
-            <p className="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
-              AI-powered career readiness for Malaysian undergraduates. Navigating the transition from university to industry with precision and data-driven insights.
-            </p>
-            <div className="hidden lg:block pt-lg">
-                <div className="p-md bg-surface-container border border-outline-variant rounded-xl max-w-sm shadow-sm">
-                <div className="flex items-start space-x-sm">
-                  <Icon name="verified_user" className="text-primary" />
-                  <div>
-                    <p className="font-label-md text-label-md text-on-surface">Built for Universities</p>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      Trusted by Malaysian institutions to empower the next generation of professionals.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <AuthMarketingPanel />
 
           <section className="lg:col-span-5 flex justify-center lg:justify-end">
             <div className="w-full max-w-[440px] bg-surface-container border border-outline-variant rounded-xl p-md md:p-lg flex flex-col space-y-md shadow-xl shadow-slate-900/10">
@@ -83,6 +60,7 @@ export function LoginPage() {
                   <span className="w-5 h-5 rounded-full bg-white text-[#4285F4] grid place-items-center font-bold text-xs">G</span>
                   <span className="font-label-md text-label-md text-on-surface">Continue with Google</span>
                 </button>
+                <p className="text-center font-label-sm text-label-sm text-on-surface-variant">For student accounts only.</p>
               </div>
               <div className="flex items-center space-x-sm">
                 <hr className="flex-grow border-outline-variant" />
@@ -91,8 +69,8 @@ export function LoginPage() {
               </div>
               <form className="flex flex-col space-y-md" onSubmit={handleLogin}>
                 <div className="space-y-xs">
-                  <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="email">University Email</label>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-sm text-on-surface focus:outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/40" id="email" onChange={(event) => setEmail(event.target.value)} placeholder="student@university.edu.my" required type="email" value={email} />
+                  <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="email">Email</label>
+                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-sm text-on-surface focus:outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/40" id="email" onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" required type="email" value={email} />
                 </div>
                 <div className="space-y-xs">
                   <label className="font-label-md text-label-md text-on-surface-variant" htmlFor="password">Password</label>

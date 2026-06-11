@@ -27,7 +27,18 @@ describe("Authentication Flow Separation", () => {
     if (existsSync(signupPageUrl)) {
       const signupSource = readFileSync(signupPageUrl, "utf8");
       assert.ok(signupSource.includes('to="/login"'), "SignupPage should have a Link to the login page");
+      assert.ok(signupSource.includes('to="/signup/employer"'), "SignupPage should have a Link to employer signup");
       assert.ok(signupSource.includes('handleCreateAccount'), "SignupPage should handle account creation");
     }
+  });
+
+  test("student auth screens use generic email copy and mark Google as student-only", () => {
+    const loginSource = readFileSync(new URL("./LoginPage.jsx", import.meta.url), "utf8");
+    const signupSource = readFileSync(new URL("./SignupPage.jsx", import.meta.url), "utf8");
+
+    assert.ok(!loginSource.includes("University Email"), "LoginPage should use generic email copy");
+    assert.ok(!signupSource.includes("University Email"), "SignupPage should use generic email copy");
+    assert.ok(loginSource.includes("For student accounts only."), "LoginPage should mark Google sign-in as student-only");
+    assert.ok(signupSource.includes("For student accounts only."), "SignupPage should mark Google sign-in as student-only");
   });
 });
