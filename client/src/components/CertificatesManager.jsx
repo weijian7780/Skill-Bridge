@@ -112,10 +112,14 @@ export function CertificatesManager() {
   }
 
   async function handleView(id) {
+    // Open the tab synchronously on the click so popup blockers don't block it,
+    // then point it at the signed URL once the request resolves.
+    const viewer = window.open("", "_blank", "noopener,noreferrer");
     try {
       const res = await getCertificateUrl(token, id);
-      window.open(res.url, "_blank", "noopener,noreferrer");
+      if (viewer) viewer.location = res.url;
     } catch (error) {
+      if (viewer) viewer.close();
       setStatusIsWarning(true);
       setStatus(error.message);
     }
@@ -163,7 +167,10 @@ export function CertificatesManager() {
                 multiple
                 className="hidden"
                 disabled={busy}
-                onChange={(event) => handleFiles(event.target.files)}
+                onChange={(event) => {
+                  handleFiles(event.target.files);
+                  event.target.value = ""; // reset so the same file can be re-selected after delete
+                }}
               />
             </label>
           </div>
