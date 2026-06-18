@@ -113,11 +113,16 @@ export function CertificatesManager() {
 
   async function handleView(id) {
     // Open the tab synchronously on the click so popup blockers don't block it,
-    // then point it at the signed URL once the request resolves.
-    const viewer = window.open("", "_blank", "noopener,noreferrer");
+    // then point it at the signed URL once the request resolves. Note: no
+    // "noopener" here — that makes window.open return null, leaving no handle to
+    // navigate. We sever the back-reference manually after navigating instead.
+    const viewer = window.open("", "_blank");
     try {
       const res = await getCertificateUrl(token, id);
-      if (viewer) viewer.location = res.url;
+      if (viewer) {
+        viewer.opener = null;
+        viewer.location = res.url;
+      }
     } catch (error) {
       if (viewer) viewer.close();
       setStatusIsWarning(true);
