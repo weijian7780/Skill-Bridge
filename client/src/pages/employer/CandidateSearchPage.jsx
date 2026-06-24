@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "../../components/Icon.jsx";
 import { regionOptions, getRegionOption } from "../../services/career/regionOptions.js";
@@ -34,12 +34,12 @@ export function CandidateSearchPage() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSearch(event) {
-    event.preventDefault();
+  const runSearch = useCallback(async (searchSkill, searchLocation) => {
+    if (!token) return;
     setSearching(true);
     setError("");
     try {
-      const result = await searchCandidates(token, { skill, location });
+      const result = await searchCandidates(token, { skill: searchSkill, location: searchLocation });
       setCandidates(result.candidates || []);
       setSelected(null);
     } catch (err) {
@@ -47,6 +47,18 @@ export function CandidateSearchPage() {
     } finally {
       setSearching(false);
     }
+  }, [token]);
+
+  // Load all of the employer's applicants on open; Search then filters them.
+  useEffect(() => {
+    if (active && token) {
+      runSearch("", "all-malaysia");
+    }
+  }, [active, token, runSearch]);
+
+  function handleSearch(event) {
+    event.preventDefault();
+    runSearch(skill, location);
   }
 
   async function openCandidate(id) {
@@ -109,8 +121,12 @@ export function CandidateSearchPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-md">
         <div className="space-y-sm">
-          {candidates.length === 0 ? (
-            <p className="font-body-sm text-body-sm text-on-surface-variant">No candidates yet — run a search.</p>
+          {searching ? (
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Loading applicants…</p>
+          ) : candidates.length === 0 ? (
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              No applicants yet. Candidates appear here once they apply to your job posts.
+            </p>
           ) : (
             candidates.map((candidate) => (
               <button
