@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import { requireActiveSubscription, isActiveSubscription } from "./subscription.js";
+import { requireActiveSubscription, requireJobPostEntitlement, isActiveSubscription } from "./subscription.js";
 
 function createTestApp(subscriptionRows) {
   const app = express();
@@ -57,6 +57,75 @@ test("allows the request through when an active subscription exists", async () =
     assert.equal(response.status, 200);
     const body = await response.json();
     assert.equal(body.ok, true);
+  } finally {
+    server.close();
+  }
+});
+
+// requireJobPostEntitlement: routes by which table the request hits.
+function createEntitlementApp({ subscriptionRows, creditRows }) {
+  const app = express();
+  app.use((request, _response, next) => {
+    request.user = { id: "employer-123", role: "employer" };
+    request.supabase = {
+      url: "https://test.supabase.co",
+      serviceRoleKey: "test-key",
+      fetchImpl: async (url) => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return String(url).includes("employer_job_post_credits") ? creditRows : subscriptionRows;
+        },
+      }),
+    };
+    next();
+  });
+  app.use(requireJobPostEntitlement);
+  app.get("/post", (request, response) => response.json({ ok: true, entitlement: request.entitlement }));
+  return app;
+}
+
+test("job-post entitlement: active subscription passes as type 'subscription'", async () => {
+  const app = createEntitlementApp({
+    subscriptionRows: [{ status: "active", expires_at: "2999-01-01T00:00:00Z" }],
+    creditRows: [],
+  });
+  const { server, baseUrl } = listen(app);
+  try {
+    const response = await fetch(`${baseUrl}/post`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.entitlement.type, "subscription");
+  } finally {
+    server.close();
+  }
+});
+
+test("job-post entitlement: an available credit passes as type 'credit'", async () => {
+  const app = createEntitlementApp({
+    subscriptionRows: [{ status: "inactive" }],
+    creditRows: [{ id: "credit-1" }],
+  });
+  const { server, baseUrl } = listen(app);
+  try {
+    const response = await fetch(`${baseUrl}/post`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.entitlement.type, "credit");
+    assert.equal(body.entitlement.creditId, "credit-1");
+  } finally {
+    server.close();
+  }
+});
+
+test("job-post entitlement: no subscription and no credit returns 402", async () => {
+  const app = createEntitlementApp({ subscriptionRows: [{ status: "inactive" }], creditRows: [] });
+  const { server, baseUrl } = listen(app);
+  try {
+    const response = await fetch(`${baseUrl}/post`);
+    assert.equal(response.status, 402);
+    const body = await response.json();
+    assert.equal(body.code, "job_post_entitlement_required");
   } finally {
     server.close();
   }

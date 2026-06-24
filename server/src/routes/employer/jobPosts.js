@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { requireActiveSubscription } from "../../middleware/subscription.js";
+import { requireJobPostEntitlement, consumeJobPostCredit } from "../../middleware/subscription.js";
 
 export const jobPostsRouter = Router();
 
-// Posting a job is a premium feature: requires an active employer subscription.
-jobPostsRouter.post("/", requireActiveSubscription, async (request, response) => {
+// Posting a job requires either an active subscription (unlimited) or a
+// pay-per-post credit (RM50), which is consumed once the post is created.
+jobPostsRouter.post("/", requireJobPostEntitlement, async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;
   const employerId = request.user.id;
 
@@ -34,6 +35,11 @@ jobPostsRouter.post("/", requireActiveSubscription, async (request, response) =>
 
     const data = await supabaseResponse.json();
     const job = Array.isArray(data) ? data[0] : data;
+
+    // Pay-per-post employers spend one credit per published listing.
+    if (request.entitlement?.type === "credit") {
+      await consumeJobPostCredit(request, request.entitlement.creditId, job?.id);
+    }
 
     response.status(201).json({ ok: true, job });
   } catch (error) {

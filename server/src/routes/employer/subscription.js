@@ -30,10 +30,53 @@ subscriptionRouter.get("/", async (request, response) => {
 
     const rows = await res.json();
     const subscription = Array.isArray(rows) ? rows[0] ?? null : rows;
-    response.json({ ok: true, subscription, active: isActiveSubscription(subscription) });
+
+    // Count unused pay-per-post credits so the UI can show remaining posts.
+    const creditUrl = new URL("/rest/v1/employer_job_post_credits", url);
+    creditUrl.searchParams.set("user_id", `eq.${userId}`);
+    creditUrl.searchParams.set("status", "eq.available");
+    creditUrl.searchParams.set("select", "id");
+    const creditRes = await fetchImpl(creditUrl.toString(), { headers: serviceHeaders(serviceRoleKey) });
+    const creditRows = creditRes.ok ? await creditRes.json() : [];
+    const availableCredits = Array.isArray(creditRows) ? creditRows.length : 0;
+
+    response.json({
+      ok: true,
+      subscription,
+      active: isActiveSubscription(subscription),
+      availableCredits,
+    });
   } catch (error) {
     console.error("Failed to fetch subscription:", error);
     response.status(500).json({ error: "Failed to fetch subscription" });
+  }
+});
+
+// Mock checkout for a single pay-per-post credit (RM50). Inserts one available
+// credit; a real implementation would do this only after successful payment.
+subscriptionRouter.post("/buy-credit", async (request, response) => {
+  const { url, serviceRoleKey, fetchImpl } = request.supabase;
+  const userId = request.user.id;
+
+  try {
+    const fetchUrl = new URL("/rest/v1/employer_job_post_credits", url);
+    const res = await fetchImpl(fetchUrl.toString(), {
+      method: "POST",
+      headers: serviceHeaders(serviceRoleKey, { Prefer: "return=representation" }),
+      body: JSON.stringify({ user_id: userId, status: "available", amount: 50 }),
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Supabase error: ${res.status} ${errorBody}`);
+    }
+
+    const data = await res.json();
+    const credit = Array.isArray(data) ? data[0] : data;
+    response.status(201).json({ ok: true, credit });
+  } catch (error) {
+    console.error("Failed to buy job-post credit:", error);
+    response.status(500).json({ error: "Failed to buy job-post credit" });
   }
 });
 

@@ -21,3 +21,10 @@ export function cancelEmployerSubscription(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export function buyEmployerJobPostCredit(token) {
+  return apiRequest("/employer/subscription/buy-credit", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

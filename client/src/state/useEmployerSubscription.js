@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext.jsx";
 import {
   activateEmployerSubscription,
+  buyEmployerJobPostCredit,
   cancelEmployerSubscription,
   getEmployerSubscription,
 } from "../services/employer/employerSubscriptionApi.js";
@@ -13,6 +14,7 @@ export function useEmployerSubscription() {
   const token = session?.accessToken;
   const [subscription, setSubscription] = useState(null);
   const [active, setActive] = useState(false);
+  const [availableCredits, setAvailableCredits] = useState(0);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
 
@@ -26,6 +28,7 @@ export function useEmployerSubscription() {
       const result = await getEmployerSubscription(token);
       setSubscription(result.subscription ?? null);
       setActive(Boolean(result.active));
+      setAvailableCredits(result.availableCredits ?? 0);
     } catch (error) {
       setStatus(error.message || "Could not load subscription.");
     } finally {
@@ -51,6 +54,19 @@ export function useEmployerSubscription() {
     }
   }, [token]);
 
+  const buyCredit = useCallback(async () => {
+    if (!token) return { ok: false };
+    try {
+      await buyEmployerJobPostCredit(token);
+      setAvailableCredits((count) => count + 1);
+      setStatus("Job-post credit purchased.");
+      return { ok: true };
+    } catch (error) {
+      setStatus(error.message || "Could not purchase credit.");
+      return { ok: false, reason: error.message };
+    }
+  }, [token]);
+
   const cancel = useCallback(async () => {
     if (!token) return { ok: false };
     try {
@@ -64,5 +80,5 @@ export function useEmployerSubscription() {
     }
   }, [token]);
 
-  return { subscription, active, loading, status, reload, subscribe, cancel };
+  return { subscription, active, availableCredits, loading, status, reload, subscribe, buyCredit, cancel };
 }

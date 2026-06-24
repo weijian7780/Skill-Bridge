@@ -66,3 +66,33 @@ create trigger set_employer_subscriptions_updated_at
 before update on public.employer_subscriptions
 for each row
 execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- 3. employer_job_post_credits (pay-per-post tier)
+-- One row == the right to publish one job listing. Bought for RM50, consumed
+-- when the credit is spent on a job post. No expiry. This is the alternative
+-- to the recurring 'professional' subscription for employers who post rarely.
+-- ---------------------------------------------------------------------------
+create table if not exists public.employer_job_post_credits (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  status text not null default 'available' check (status in ('available', 'consumed')),
+  amount integer not null default 50,
+  job_post_id uuid,
+  created_at timestamptz not null default now(),
+  consumed_at timestamptz
+);
+
+create index if not exists employer_job_post_credits_user_status_idx
+  on public.employer_job_post_credits (user_id, status);
+
+alter table public.employer_job_post_credits enable row level security;
+
+drop policy if exists "employers manage their own job post credits"
+  on public.employer_job_post_credits;
+
+create policy "employers manage their own job post credits"
+  on public.employer_job_post_credits
+  for all
+  using (auth.uid()::text = user_id)
+  with check (auth.uid()::text = user_id);
