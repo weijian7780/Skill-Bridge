@@ -7,8 +7,10 @@ import { getEmployerJobs, deleteEmployerJob, updateEmployerJobStatus } from "../
 
 export function ManageJobsPage() {
   const { session } = useAuth();
-  const { active: subscribed } = useEmployerSubscription();
-  const postJobTarget = subscribed ? "/employer/jobs/new" : "/employer/subscription";
+  const { active, availableCredits } = useEmployerSubscription();
+  // Can post with an active subscription OR an unused pay-per-post credit.
+  const canPost = active || availableCredits > 0;
+  const postJobTarget = canPost ? "/employer/jobs/new" : "/employer/subscription";
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,8 +71,8 @@ export function ManageJobsPage() {
           to={postJobTarget}
           className="flex items-center space-x-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-secondary transition-all"
         >
-          <Icon name={subscribed ? "add" : "lock"} className="text-[18px]" />
-          <span>{subscribed ? "Post a Job" : "Subscribe to Post"}</span>
+          <Icon name={canPost ? "add" : "lock"} className="text-[18px]" />
+          <span>{canPost ? "Post a Job" : "Subscribe to Post"}</span>
         </Link>
       </div>
 
@@ -91,7 +93,7 @@ export function ManageJobsPage() {
             to={postJobTarget}
             className="flex items-center space-x-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-secondary transition-all"
           >
-            <span>{subscribed ? "Create Job Post" : "Subscribe to Post"}</span>
+            <span>{canPost ? "Create Job Post" : "Subscribe to Post"}</span>
           </Link>
         </div>
       ) : (

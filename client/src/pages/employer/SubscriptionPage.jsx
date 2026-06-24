@@ -4,8 +4,8 @@ import { useEmployerSubscription } from "../../state/useEmployerSubscription.js"
 
 const PAY_PER_POST_FEATURES = [
   "Publish one internship or graduate job listing",
-  "AI filtering & skill analytics on applicants",
-  "Review and manage applicants for that job",
+  "Listing stays live until you close it",
+  "Reach the full SkillBridge student base",
   "Ideal for hiring 1–3 times a year",
 ];
 
@@ -80,6 +80,9 @@ export function SubscriptionPage() {
           >
             {busy === "credit" ? "Processing..." : "Buy a job-post credit"}
           </button>
+          <p className="font-label-sm text-label-sm text-on-surface-variant mt-sm text-center">
+            Reviewing applicants & candidate search require Professional.
+          </p>
         </div>
 
         {/* Professional */}
