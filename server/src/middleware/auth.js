@@ -40,10 +40,17 @@ export function requireAuth({ supabaseUrl, supabaseKey, fetchImpl = fetch }) {
       }
 
       const user = await userResponse.json();
+      const role = await resolveTrustedRole({
+        supabaseUrl,
+        supabaseKey,
+        fetchImpl,
+        userId: user.id,
+      });
+
       request.user = {
         id: user.id,
         email: user.email,
-        role: user.user_metadata?.role ?? "student",
+        role,
       };
 
       next();
@@ -53,6 +60,34 @@ export function requireAuth({ supabaseUrl, supabaseKey, fetchImpl = fetch }) {
       });
     }
   };
+}
+
+/**
+ * Resolves the user's role from the service-role-protected `user_roles` table,
+ * never from user_metadata (which the user can edit). Fails to the
+ * least-privilege "student" if the role cannot be read, so a lookup problem can
+ * never escalate access.
+ */
+async function resolveTrustedRole({ supabaseUrl, supabaseKey, fetchImpl, userId }) {
+  try {
+    const rolesUrl = new URL("/rest/v1/user_roles", supabaseUrl);
+    rolesUrl.searchParams.set("user_id", `eq.${userId}`);
+    rolesUrl.searchParams.set("select", "role");
+
+    const res = await fetchImpl(rolesUrl.toString(), {
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+    });
+
+    if (!res.ok) {
+      return "student";
+    }
+
+    const rows = await res.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return row?.role === "employer" ? "employer" : "student";
+  } catch {
+    return "student";
+  }
 }
 
 export function requireRole(role) {

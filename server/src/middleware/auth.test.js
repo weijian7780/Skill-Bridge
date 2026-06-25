@@ -12,6 +12,26 @@ function fakeFetch(status, body) {
   });
 }
 
+// Routes the two calls requireAuth makes: the Supabase user lookup and the
+// trusted-role lookup against the user_roles table. `role` is what the
+// user_roles table returns, independent of anything in user_metadata.
+function routedFetch({ user, userStatus = 200, role }) {
+  return async (url) => {
+    if (String(url).includes("/rest/v1/user_roles")) {
+      return {
+        ok: true,
+        status: 200,
+        async json() { return role === undefined ? [] : [{ role }]; },
+      };
+    }
+    return {
+      ok: userStatus >= 200 && userStatus < 300,
+      status: userStatus,
+      async json() { return user; },
+    };
+  };
+}
+
 function createTestApp(...middlewares) {
   const app = express();
   app.use(express.json());
@@ -84,6 +104,9 @@ test("resolves authenticated user from Supabase and exposes it on the request", 
   const calls = [];
   const fetchImpl = async (url, options) => {
     calls.push({ url, options });
+    if (String(url).includes("/rest/v1/user_roles")) {
+      return { ok: true, status: 200, async json() { return [{ role: "employer" }]; } };
+    }
     return { ok: true, status: 200, async json() { return supabaseUser; } };
   };
 
@@ -119,7 +142,7 @@ test("requireRole rejects a student accessing an employer-only endpoint", async 
   };
 
   const app = createTestApp(
-    authMiddleware(fakeFetch(200, studentUser)),
+    authMiddleware(routedFetch({ user: studentUser, role: "student" })),
     requireRole("employer"),
   );
   const { server, baseUrl } = listen(app);
@@ -145,7 +168,7 @@ test("requireRole allows an employer through an employer-only endpoint", async (
   };
 
   const app = createTestApp(
-    authMiddleware(fakeFetch(200, employerUser)),
+    authMiddleware(routedFetch({ user: employerUser, role: "employer" })),
     requireRole("employer"),
   );
   const { server, baseUrl } = listen(app);
@@ -172,7 +195,7 @@ test("requireRole rejects an employer accessing a student-only endpoint", async 
   };
 
   const app = createTestApp(
-    authMiddleware(fakeFetch(200, employerUser)),
+    authMiddleware(routedFetch({ user: employerUser, role: "employer" })),
     requireRole("student"),
   );
   const { server, baseUrl } = listen(app);
@@ -185,6 +208,63 @@ test("requireRole rejects an employer accessing a student-only endpoint", async 
 
     assert.equal(response.status, 403);
     assert.equal(body.error, "This endpoint requires the 'student' role");
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("ignores a self-assigned employer role in user_metadata and trusts user_roles", async () => {
+  // A student who edited their own user_metadata to claim role: "employer".
+  // The trusted user_roles table still says "student", so employer-only
+  // endpoints must reject them.
+  const selfPromotedUser = {
+    id: "student-999",
+    email: "sneaky@ums.edu.my",
+    user_metadata: { role: "employer" },
+  };
+
+  const app = createTestApp(
+    authMiddleware(routedFetch({ user: selfPromotedUser, role: "student" })),
+    requireRole("employer"),
+  );
+  const { server, baseUrl } = listen(app);
+
+  try {
+    const response = await fetch(`${baseUrl}/protected`, {
+      headers: { Authorization: "Bearer student-token" },
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(body.error, "This endpoint requires the 'employer' role");
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("falls back to the student role when the role lookup fails", async () => {
+  const employerClaim = {
+    id: "user-500",
+    email: "claims-employer@company.com",
+    user_metadata: { role: "employer" },
+  };
+
+  // user_roles lookup errors out -> must fail to least-privilege "student".
+  const fetchImpl = async (url) => {
+    if (String(url).includes("/rest/v1/user_roles")) {
+      throw new Error("roles table unreachable");
+    }
+    return { ok: true, status: 200, async json() { return employerClaim; } };
+  };
+
+  const app = createTestApp(authMiddleware(fetchImpl), requireRole("employer"));
+  const { server, baseUrl } = listen(app);
+
+  try {
+    const response = await fetch(`${baseUrl}/protected`, {
+      headers: { Authorization: "Bearer some-token" },
+    });
+    assert.equal(response.status, 403);
   } finally {
     await closeServer(server);
   }
