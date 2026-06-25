@@ -26,6 +26,15 @@ const SUPPORTED_IMAGE_FORMATS = [
   },
 ];
 
+// True when the upload is one of the supported image formats, judged by MIME
+// type or file extension. Lets a route choose image extraction over text parsing.
+export function isImageUpload({ filename, mimeType }) {
+  const extension = path.extname(String(filename || "")).toLowerCase();
+  return SUPPORTED_IMAGE_FORMATS.some(
+    (format) => format.mimeType === mimeType || format.extensions.includes(extension),
+  );
+}
+
 export async function parseCvBuffer({ buffer, filename, mimeType, imageTextExtractor }) {
   const extension = path.extname(filename).toLowerCase();
 

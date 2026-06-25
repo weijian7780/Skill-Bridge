@@ -4,7 +4,7 @@ import http from "node:http";
 
 import { createApp } from "../app.js";
 
-test("CV image upload uses Gemini vision OCR before Gemini skill extraction", async () => {
+test("CV image upload extracts a skill profile directly from the image in one Gemini call", async () => {
   const previousEnv = captureEnv([
     "GEMINI_API_KEY",
     "GEMINI_BASE_URL",
@@ -12,25 +12,20 @@ test("CV image upload uses Gemini vision OCR before Gemini skill extraction", as
   ]);
   const requests = [];
   const geminiServer = http.createServer(async (request, response) => {
-    const body = JSON.parse(await readRequestBody(request));
-    requests.push(body);
-
-    const content = requests.length === 1
-      ? "Alex Mercer\nTechnical Skills: Python, SQL, Power BI"
-      : JSON.stringify({
-        technicalSkills: ["Python", "SQL", "Power BI"],
-        softSkills: ["Communication"],
-        education: "UMS Computer Science",
-        certifications: [],
-        confidence: 0.88,
-      });
+    requests.push(JSON.parse(await readRequestBody(request)));
 
     response.writeHead(200, { "Content-Type": "application/json" });
     response.end(JSON.stringify({
       choices: [
         {
           message: {
-            content,
+            content: JSON.stringify({
+              technicalSkills: ["Python", "SQL", "Power BI"],
+              softSkills: ["Communication"],
+              education: "UMS Computer Science",
+              certifications: [],
+              confidence: 0.88,
+            }),
           },
         },
       ],
@@ -57,12 +52,13 @@ test("CV image upload uses Gemini vision OCR before Gemini skill extraction", as
     assert.equal(response.status, 200);
     assert.equal(body.document.filename, "latest-cv.jpg");
     assert.deepEqual(body.skillProfile.technicalSkills, ["Python", "SQL", "Power BI"]);
-    assert.equal(body.skillProfile.provider, "Gemini");
-    assert.equal(requests.length, 2);
+    assert.equal(body.skillProfile.provider, "Gemini (image)");
+    // A single vision call that sends the image and asks for structured JSON -
+    // never a verbatim-OCR pass (which trips Gemini's RECITATION filter).
+    assert.equal(requests.length, 1);
     assert.equal(requests[0].model, "gemini-2.5-flash-lite");
+    assert.equal(requests[0].response_format.type, "json_object");
     assert.match(requests[0].messages[0].content[1].image_url.url, /data:image\/jpeg;base64,/);
-    assert.equal(requests[1].model, "gemini-2.5-flash-lite");
-    assert.match(requests[1].messages[0].content, /Alex Mercer/);
   } finally {
     restoreEnvSnapshot(previousEnv);
     await closeServer(appServer);
@@ -95,7 +91,7 @@ test("CV upload returns 413 when the file is larger than 10 MB", async () => {
   }
 });
 
-test("CV image upload returns 502 Bad Gateway when Gemini returns 403 Authorization failed", async () => {
+test("CV image upload degrades gracefully (no 502) when Gemini auth fails", async () => {
   const previousEnv = captureEnv([
     "GEMINI_API_KEY",
     "GEMINI_BASE_URL",
@@ -125,8 +121,11 @@ test("CV image upload returns 502 Bad Gateway when Gemini returns 403 Authorizat
     });
     const body = await response.json();
 
-    assert.equal(response.status, 502);
-    assert.match(body.error, /Gemini chat completion failed \(403\)/);
+    // An image the model can't read must not crash the upload as a 502 - the
+    // student gets an editable empty profile plus a warning explaining why.
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.skillProfile.technicalSkills, []);
+    assert.ok(body.skillProfile.warnings.some((w) => /403/.test(w)));
   } finally {
     restoreEnvSnapshot(previousEnv);
     await closeServer(appServer);
@@ -134,7 +133,7 @@ test("CV image upload returns 502 Bad Gateway when Gemini returns 403 Authorizat
   }
 });
 
-test("CV image upload returns 502 Bad Gateway when Gemini returns malformed JSON", async () => {
+test("CV image upload degrades gracefully when Gemini returns malformed JSON", async () => {
   const previousEnv = captureEnv([
     "GEMINI_API_KEY",
     "GEMINI_BASE_URL",
@@ -162,8 +161,9 @@ test("CV image upload returns 502 Bad Gateway when Gemini returns malformed JSON
     });
     const body = await response.json();
 
-    assert.equal(response.status, 502);
-    assert.match(body.error, /Gemini chat completion returned invalid JSON/);
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.skillProfile.technicalSkills, []);
+    assert.ok(body.skillProfile.warnings.some((w) => /invalid JSON/.test(w)));
   } finally {
     restoreEnvSnapshot(previousEnv);
     await closeServer(appServer);
@@ -171,15 +171,19 @@ test("CV image upload returns 502 Bad Gateway when Gemini returns malformed JSON
   }
 });
 
-test("CV image upload returns 502 Bad Gateway when Gemini returns no message content", async () => {
+test("CV image upload degrades gracefully and surfaces the finish_reason when Gemini blocks the content", async () => {
   const previousEnv = captureEnv([
     "GEMINI_API_KEY",
     "GEMINI_BASE_URL",
     "GEMINI_MODEL",
   ]);
+  // Mirrors the real RECITATION block: 200 OK, but an empty content with a
+  // content_filter finish_reason.
   const geminiServer = http.createServer(async (_request, response) => {
     response.writeHead(200, { "Content-Type": "application/json" });
-    response.end(JSON.stringify({ choices: [{ message: {} }] }));
+    response.end(JSON.stringify({
+      choices: [{ finish_reason: "content_filter: RECITATION", message: {} }],
+    }));
   }).listen(0);
   const appServer = createApp().listen(0);
 
@@ -199,8 +203,10 @@ test("CV image upload returns 502 Bad Gateway when Gemini returns no message con
     });
     const body = await response.json();
 
-    assert.equal(response.status, 502);
-    assert.match(body.error, /Gemini chat completion returned no message content/);
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.skillProfile.technicalSkills, []);
+    assert.ok(body.skillProfile.warnings.some((w) => /no message content/.test(w)));
+    assert.ok(body.skillProfile.warnings.some((w) => /content_filter|RECITATION/.test(w)));
   } finally {
     restoreEnvSnapshot(previousEnv);
     await closeServer(appServer);

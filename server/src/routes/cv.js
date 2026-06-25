@@ -1,8 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import { parseCvBuffer } from "../services/cvParser.js";
-import { extractCvImageTextWithGemini } from "../services/llm/geminiClient.js";
-import { extractSkillProfile } from "../services/llm/skillExtractionRouter.js";
+import { parseCvBuffer, isImageUpload } from "../services/cvParser.js";
+import { extractSkillProfile, extractSkillProfileFromImage } from "../services/llm/skillExtractionRouter.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -20,21 +19,23 @@ cvRouter.post("/extract", upload.single("cv"), async (request, response, next) =
       return;
     }
 
-    const parsed = await parseCvBuffer({
-      buffer: request.file.buffer,
-      filename: request.file.originalname,
-      mimeType: request.file.mimetype,
-      imageTextExtractor: extractCvImageTextWithGemini,
-    });
+    const { buffer, originalname: filename, mimetype: mimeType } = request.file;
 
-    const skillProfile = await extractSkillProfile(parsed.text);
+    let skillProfile;
+    let textLength = 0;
+
+    if (isImageUpload({ filename, mimeType })) {
+      // Image CVs: extract structured skills straight from the image. Verbatim
+      // OCR trips Gemini's RECITATION filter on common resume templates.
+      skillProfile = await extractSkillProfileFromImage({ buffer, mimeType, filename });
+    } else {
+      const parsed = await parseCvBuffer({ buffer, filename, mimeType });
+      textLength = parsed.text.length;
+      skillProfile = await extractSkillProfile(parsed.text);
+    }
 
     response.json({
-      document: {
-        filename: request.file.originalname,
-        mimeType: request.file.mimetype,
-        textLength: parsed.text.length,
-      },
+      document: { filename, mimeType, textLength },
       skillProfile,
     });
   } catch (error) {

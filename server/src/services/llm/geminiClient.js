@@ -45,6 +45,39 @@ export async function extractCvImageTextWithGemini({ buffer, filename, mimeType 
   });
 }
 
+// Extracts a structured skill profile directly from a CV image. Verbatim OCR of
+// common public resume templates trips Gemini's RECITATION content filter
+// (empty response); asking for structured JSON is a transformation, not a
+// reproduction, so it is not blocked.
+export async function extractSkillsFromImageWithGemini({ buffer, mimeType, filename }) {
+  const content = await createGeminiChatCompletion({
+    model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: buildExtractionPrompt(
+              `The CV is the attached image file: ${filename}. Read the image and extract the profile. Do not transcribe the document verbatim — return only the structured JSON.`,
+            ),
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${buffer.toString("base64")}`,
+            },
+          },
+        ],
+      },
+    ],
+    maxTokens: 900,
+    responseFormat: { type: "json_object" },
+  });
+
+  return parseJsonResponse(content);
+}
+
 export async function createGeminiChatCompletion({ model, messages, maxTokens, responseFormat }) {
   if (!process.env.GEMINI_API_KEY) {
     const error = new Error("GEMINI_API_KEY is not configured.");
@@ -144,9 +177,11 @@ function parseChatCompletionContent(text) {
     throw error;
   }
 
-  const content = payload?.choices?.[0]?.message?.content;
+  const choice = payload?.choices?.[0];
+  const content = choice?.message?.content;
   if (!content) {
-    const error = new Error("Gemini chat completion returned no message content.");
+    const reason = choice?.finish_reason ? ` (finish_reason: ${choice.finish_reason})` : "";
+    const error = new Error(`Gemini chat completion returned no message content${reason}.`);
     error.statusCode = 502;
     throw error;
   }

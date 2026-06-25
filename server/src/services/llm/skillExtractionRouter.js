@@ -1,4 +1,4 @@
-import { extractWithGemini } from "./geminiClient.js";
+import { extractWithGemini, extractSkillsFromImageWithGemini } from "./geminiClient.js";
 import { extractWithRules } from "./ruleBasedExtractor.js";
 export { buildExtractionPrompt, parseJsonResponse } from "./skillExtractionPrompt.js";
 
@@ -16,6 +16,29 @@ export async function extractSkillProfile(cvText) {
   }
 
   return withDefaults(extractWithRules(cvText), "Local rule fallback", warnings);
+}
+
+// Image CVs are read with Gemini vision directly (no rule fallback, since there
+// is no text to pattern-match). If Gemini fails or is blocked, we return an
+// editable empty profile with a warning so the upload never hard-fails.
+export async function extractSkillProfileFromImage({ buffer, mimeType, filename }) {
+  const warnings = [];
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      return withDefaults(
+        await extractSkillsFromImageWithGemini({ buffer, mimeType, filename }),
+        "Gemini (image)",
+        warnings,
+      );
+    } catch (error) {
+      warnings.push(`Gemini image extraction failed: ${error.message}`);
+    }
+  } else {
+    warnings.push("Gemini API key not configured");
+  }
+
+  return withDefaults({}, "Image extraction unavailable", warnings);
 }
 
 function withDefaults(profile, provider, warnings) {
