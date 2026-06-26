@@ -169,7 +169,7 @@ export function ApplicantsPage() {
                       {app.job_title}
                     </td>
                     <td className="p-sm font-body-sm text-body-sm text-on-surface-variant">
-                      {new Date(app.applied_at).toLocaleDateString()}
+                      {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : "—"}
                     </td>
                     <td className="p-sm">
                       <span className={`px-2 py-1 rounded-full font-label-sm text-[11px] font-bold tracking-wide uppercase ${getStatusColor(app.status)}`}>

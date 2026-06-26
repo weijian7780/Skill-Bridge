@@ -54,7 +54,7 @@ employerStatsRouter.get("/", async (request, response) => {
     const appsOverTime = last7Days.map(date => {
       return {
         date: date,
-        applications: applications.filter(a => a.applied_at.startsWith(date)).length
+        applications: applications.filter(a => typeof a.applied_at === "string" && a.applied_at.startsWith(date)).length
       };
     });
 

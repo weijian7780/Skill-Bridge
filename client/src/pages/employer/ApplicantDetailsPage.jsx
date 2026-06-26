@@ -382,7 +382,7 @@ export function ApplicantDetailsPage() {
                   <div key={inv.id} className="p-sm bg-surface-container-lowest border border-outline-variant rounded-lg flex justify-between items-center">
                     <div>
                       <p className="font-label-md text-on-surface">
-                        {new Date(inv.scheduled_at).toLocaleString()} ({inv.duration_minutes} mins)
+                        {inv.scheduled_at ? new Date(inv.scheduled_at).toLocaleString() : "Date not set"} ({inv.duration_minutes} mins)
                       </p>
                       <p className="font-body-sm text-on-surface-variant">
                         {inv.location || "No location"} {inv.meeting_link && <a href={inv.meeting_link} target="_blank" rel="noreferrer" className="text-primary hover:underline ml-2">Join Link</a>}

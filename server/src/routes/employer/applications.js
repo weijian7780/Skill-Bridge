@@ -3,6 +3,10 @@ import { sendApplicationRejectedEmail, sendApplicationHiredEmail } from "../../s
 
 export const employerApplicationsRouter = Router();
 
+// The only statuses an applicant record may hold. Anything else is rejected so
+// a hand-crafted request can't store an arbitrary status string.
+const VALID_APPLICATION_STATUSES = ["pending", "reviewed", "shortlisted", "interview", "hired", "rejected"];
+
 // GET /api/employer/applications
 employerApplicationsRouter.get("/", async (request, response) => {
   const { url, serviceRoleKey, fetchImpl } = request.supabase;
@@ -226,6 +230,10 @@ employerApplicationsRouter.patch("/:id/status", async (request, response) => {
   const employerId = request.user.id;
   const applicationId = request.params.id;
   const { status } = request.body;
+
+  if (!VALID_APPLICATION_STATUSES.includes(status)) {
+    return response.status(400).json({ error: "Invalid application status" });
+  }
 
   try {
     // 1. Verify ownership via subquery check (we'll just fetch the app and job first for safety)

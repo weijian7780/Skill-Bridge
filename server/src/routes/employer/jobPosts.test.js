@@ -220,6 +220,48 @@ test("PATCH /job-posts/:id/status updates job status", async () => {
   }
 });
 
+test("PATCH /job-posts/:id/status rejects an invalid status with 400 and never calls Supabase", async () => {
+  let called = false;
+  const fetchImpl = async () => { called = true; return { ok: true, status: 200, async json() { return []; } }; };
+
+  const app = createTestApp({ id: "employer-123", role: "employer" }, fetchImpl);
+  const { server, baseUrl } = listen(app);
+
+  try {
+    const response = await fetch(`${baseUrl}/job-posts/job-123/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "banana" }),
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 400);
+    assert.match(body.error, /Invalid job status/);
+    assert.equal(called, false, "must reject before touching Supabase");
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("PATCH /job-posts/:id/status accepts every valid status", async () => {
+  const fetchImpl = async () => ({ ok: true, status: 200, async json() { return [{ id: "job-123" }]; } });
+  const app = createTestApp({ id: "employer-123", role: "employer" }, fetchImpl);
+  const { server, baseUrl } = listen(app);
+
+  try {
+    for (const status of ["draft", "active", "paused", "closed"]) {
+      const response = await fetch(`${baseUrl}/job-posts/job-123/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      assert.equal(response.status, 200, `status "${status}" should be accepted`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
 test("DELETE /job-posts/:id deletes a job post", async () => {
   const calls = [];
   const fetchImpl = async (url, options) => {

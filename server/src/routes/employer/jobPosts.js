@@ -3,6 +3,9 @@ import { requireJobPostEntitlement, consumeJobPostCredit } from "../../middlewar
 
 export const jobPostsRouter = Router();
 
+// The only statuses a job post may hold. Rejects arbitrary status strings.
+const VALID_JOB_STATUSES = ["draft", "active", "paused", "closed"];
+
 // Posting a job requires either an active subscription (unlimited) or a
 // pay-per-post credit (RM50), which is consumed once the post is created.
 jobPostsRouter.post("/", requireJobPostEntitlement, async (request, response) => {
@@ -157,6 +160,10 @@ jobPostsRouter.patch("/:id/status", async (request, response) => {
   const employerId = request.user.id;
   const jobId = request.params.id;
   const { status } = request.body;
+
+  if (!VALID_JOB_STATUSES.includes(status)) {
+    return response.status(400).json({ error: "Invalid job status" });
+  }
 
   try {
     const fetchUrl = new URL("/rest/v1/job_posts", url);

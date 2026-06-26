@@ -14,10 +14,12 @@ export function EmployerDashboardPage() {
   const { session } = useAuth();
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadStats() {
       if (!session?.accessToken) return;
+      setError("");
       try {
         const res = await getEmployerStats(session.accessToken);
         if (res.stats) {
@@ -25,6 +27,7 @@ export function EmployerDashboardPage() {
         }
       } catch (err) {
         console.error("Failed to load stats", err);
+        setError("Couldn't load your dashboard stats. Please refresh to try again.");
       } finally {
         setIsLoading(false);
       }
@@ -52,6 +55,12 @@ export function EmployerDashboardPage() {
             Manage your job postings and find the right talent.
           </p>
         </div>
+
+        {error && (
+          <div className="mb-md p-sm rounded-lg bg-error/10 text-error font-body-sm text-body-sm">
+            {error}
+          </div>
+        )}
 
         {/* Top KPI Cards */}
         {stats && (
